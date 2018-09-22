@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<!--
+    Client page for connecting pygame to a browser using
+    sockjs-tornado or any other WebSocket server. Based on sockjs-tornado chat example.
+
+    See https://github.com/sockjs/sockjs-client for more about SockJS.
+    See https://github.com/mrjoes/sockjs-tornado for more about the server side.
+ -->
+<head>
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+  <script src="http://cdn.jsdelivr.net/sockjs/0.3/sockjs.min.js"></script>
+  <script>
+    $(function() {
+      var conn = null;
+
+      function log(msg) {
+        var control = $('#log');
+        control.html(control.html() + msg + '<br/>');
+        control.scrollTop(control.scrollTop() + 1000);
+      }
+
+      function connect() {
+        disconnect();
+
+        var transports = ["websocket", "xhr-streaming", "iframe-eventsource", "iframe-htmlfile", "xhr-polling", "iframe-xhr-polling", "jsonp-polling"];
+
+        conn = new SockJS('http://' + window.location.host + '/chat', transports);
+
+        log('Connecting...');
+
+        conn.onopen = function() {
+          // Called when we manage to connect to the server.
+          log('Connected.');
+          update_ui();
+        };
+
+        conn.onmessage = function(e) {
+          // Called when we receive a message from the server.
+          try {
+            o = JSON.parse(e.data)
+          } catch (exn) {
+            log('Received corrupt data packet (' + exn + '): ' + e.data)
+            return;
+          }
+
+          if (!o.type) {
+            log('Received packet with no type: ' + e.data)
+            return;
+          }
+
+          if (o.type == "msg") {
+            log('Received: ' + o.msg);
+          } else if (o.type == "pos") {
+            $("#xpos").text(o.x);
+            $("#ypos").text(o.y);
+            log("Joystick moved to " + o.x + ", " + o.y)
+          } else {
+            log('Received raw data of type ' + o.type + ': ' + e.data)
+          }
+        };
+
+        conn.onclose = function() {
+          // Called when we are disconnected from the server.
+          log('Disconnected.');
+          conn = null;
+          update_ui();
+        };
+      }
+
+      function disconnect() {
+        // Called to request disconnection from the server.
+        if (conn != null) {
+          log('Disconnecting...');
+
+          conn.close();
+          conn = null;
+
+          update_ui();
+        }
+      }
+
+      function update_ui() {
+        // Called to update the DOM.
+        // Replace this with whatever you want!
+        var msg = '';
+
+        if (conn == null || conn.readyState != SockJS.OPEN) {
+          $('#status').text('disconnected');
+          $('#connect').text('Connect');
+        } else {
+          $('#status').text('connected (' + conn.protocol + ')');
+          $('#connect').text('Disconnect');
+        }
+      }
+
+      function sendMsg(msg) {
+        // Send message to server (wrapped in JSON).
+        sendJson({'type': 'msg', 'msg': msg})
+      }
+
+      function sendJson(msg) {
+        // Send JSON object to server.
+        sendRaw(JSON.stringify(msg))
+      }
+
+      function sendRaw(msg) {
+        // Send raw message to server.
+        conn.send(msg)
+      }
+
+      $('#connect').click(function() {
+        if (conn == null) {
+          connect();
+        } else {
+          disconnect();
+        }
+
+        update_ui();
+        return false;
+      });
+
+      $('#quit').click(function() {
+        sendJson({'type': 'cmd', 'cmd': 'quit'});
+        return false;
+      });
+
+      $('form').submit(function() {
+        var text = $('#text').val();
+        log('Sending: ' + text);
+        sendMsg(text)
+       	$('#text').val('').focus();
+        return false;
+      });
+
+      connect();
+    });
+</script>
+<link rel="stylesheet" type="text/css" href="static/jetcon.css">
+</head>
+<body>
+<h3>Jetcon!</h3>
+<!-- Replace this with whatever you want -->
+<div>
+  <a id="connect" href="#">Connect</a>&nbsp;|&nbsp;Status: <span id="status">disconnected</span>
+</div>
+<p>Joystick currently at (X=<span id="xpos"></span>, Y=<span id="ypos"></span>).</p>
+<div id="log">
+</div>
+<form id="chatform">
+  <input id="text" type="text" />
+  <input type="submit" />
+</form>
+<p><button id="quit">Quit</button>
+</body>
+</html>
