@@ -1,34 +1,51 @@
-int mapControlValue(int pinReading,RANGE controlRange){
-  // Map the input pinReading to an output servo value
-  float fractionalPosition = ((pinReading-controlRange.inMIN)*1.0) / ((controlRange.inMAX-controlRange.inMIN)*1.0); // Input position as a fraction between 0 and 1
-  float fractionalCentrePosition = ((controlRange.outCENTRE-controlRange.outMIN)*1.0) / ((controlRange.outMAX-controlRange.outMIN)*1.0); // Centre position as a fraction between 0 and 1
-  /*Serial.println("\n\n");
-  Serial.println("Attempting mapping process:");
-  Serial.print("pinReading: "); Serial.println(pinReading);
-  Serial.print("inMIN: "); Serial.println(controlRange.inMIN);
-  Serial.print("inMAX: "); Serial.println(controlRange.inMAX);
-  Serial.print("outMIN: "); Serial.println(controlRange.outMIN);
-  Serial.print("outCENTRE: "); Serial.println(controlRange.outCENTRE);
-  Serial.print("outMAX: "); Serial.println(controlRange.outMAX);
-  Serial.println("---");
-  Serial.print("fractionalPosition: "); Serial.println(fractionalPosition);
-  Serial.print("fractionalCentrePosition: "); Serial.println(fractionalCentrePosition);
-  Serial.print("---");*/
-  if(fractionalPosition <= 0.5){ // pinReading is below or at the corresponding centrePosition
-    int fractionalLowerHalfPosition = (fractionalPosition * 2.0)*1024.0; // Where 0 represents input/output minimum, and 1024 represents the input position corresponding to output centre
-    //Serial.print("fractionalLowerHalfPosition: "); Serial.println(fractionalLowerHalfPosition);
-    int outPosition = map(fractionalLowerHalfPosition,0,1024,controlRange.outMIN,controlRange.outCENTRE);
-    //Serial.print("outPosition: "); Serial.println(outPosition);
-    return constrain(outPosition, controlRange.outMIN, controlRange.outMAX);
-  }else{ // Pin reading is above the correseponding centre position
-    int fractionalUpperHalfPosition = ((1.0-fractionalPosition) * 2.0)*1024.0; // Where 1024 represents input/output centre, and 0 represents the input position corresponding to output max
-    //Serial.print("fractionalUpperHalfPosition: "); Serial.println(fractionalUpperHalfPosition);
-    int outPosition = map(fractionalUpperHalfPosition,1024,0,controlRange.outCENTRE,controlRange.outMAX);
-    //Serial.print("outPosition: "); Serial.println(outPosition);
-    return constrain(outPosition, controlRange.outMIN, controlRange.outMAX);
-  }
+
+
+class CONTROL {
+  public:
+    int inMIN, inMAX, outMIN, outCENTRE, outMAX; // Control range cannot be changed (outCENTRE refers to the default centre position)
+    int trimCENTRE; // The output servo value which becomes the new centrepoint (i.e. the value that is read out when the stick is in the middle)
+    int pos; // Current servo position
+    
+    CONTROL (int _inMIN, int _inMAX, int _outMIN, int _outCENTRE, int _outMAX){
+      inMIN = _inMIN;
+      inMAX = _inMAX;
+      outMIN = _outMIN;
+      outCENTRE = _outCENTRE;
+      outMAX = _outMAX;
+      
+      trimCENTRE = outCENTRE; // Trim centre defaults to the actual centre position.
+    }
+
+    int updateServoPosition(int newPinReading){
+      // Update avgPinReading to the rolling average of it's previous value + incoming reading:
+      avgPinReading  = ((avgPinReading  * (8-1)) + newPinReading )  / 8;
+      pos = mapControlValue(avgPinReading);
+      
+      return pos;
+    }
   
-}
+  private:
+    int avgPinReading; // Hold the rolling average analog read values for this pin
+
+    int mapControlValue(int pinReading){
+      // Map the input pinReading to an output servo value //
+      float fractionalPosition = ((pinReading-inMIN)*1.0) / ((inMAX-inMIN)*1.0); // Input position as a fraction between 0 and 1
+      float fractionalCentrePosition = ((trimCENTRE-outMIN)*1.0) / ((outMAX-outMIN)*1.0); // Centre position as a fraction between 0 and 1
+    
+      if(fractionalPosition <= 0.5){
+        // pinReading is below or at the corresponding centrePosition
+        int fractionalLowerHalfPosition = (fractionalPosition * 2.0)*1024.0; // Where 0 represents input/output minimum, and 1024 represents the input position corresponding to output centre
+        int outPosition = map(fractionalLowerHalfPosition,0,1024,outMIN,trimCENTRE);
+        return constrain(outPosition, outMIN, outMAX);
+      }else{
+        // Pin reading is above the correseponding centre position
+        int fractionalUpperHalfPosition = ((1.0-fractionalPosition) * 2.0)*1024.0; // Where 1024 represents input/output centre, and 0 represents the input position corresponding to output max
+        int outPosition = map(fractionalUpperHalfPosition,1024,0,trimCENTRE,outMAX);
+        return constrain(outPosition, outMIN, outMAX);
+      }
+    }
+};
+
 
 ////////// Button analogRead values (assuming 3.3V is supplied)
 #define noButton 695
