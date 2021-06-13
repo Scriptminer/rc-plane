@@ -16,22 +16,25 @@ LORA LR;             //class instance
 
 void setup(){
   Serial.begin(115200);
+  Serial.println("Starting up...");
   pinMode(A5,OUTPUT);
   
   long startSetupTime = millis();
-  setupLoRa();
   
   if (!LR.begin(KEYVAL)) //initialise LoRa radio
-    {Serial.println("LoRa.begin() Failed! Stopping!");return;}
-
+    {Serial.println("LoRa.begin failed! Stopping!");return;}
+  
+  setupLoRa();
+  
   configLoRaUplink(); // Current setup listens for uplink signals only.
+  LR.receiveMessMode();   // radio moldule in receiver mode 
   Serial.print("Setup successful, took: "); Serial.print(millis()-startSetupTime); Serial.println("ms.");
   Serial.println("Beginning 10 second analysis of incoming data...");
 }
 
 void setupLoRa(){
   // Does all the setup prior to beginning running LoRa
-  LR.setConfig(7,3,4); // Sets the spreading factor to 7, bandwidth BW = 3 -> 20.8kHz (legal max is 25kHz)
+  LR.setConfig(7,3,1); // Sets the spreading factor SF to 7, bandwidth BW = 3 -> 20.8kHz (legal max is 25kHz), redundancy rate (CR) to 1 - lowest redundancy
 
   /* Network definition */
   LR.defDevRange(DEVRANGE);
@@ -73,6 +76,8 @@ void configLoRaDownlink(){
   }
 }*/
 
+
+
 int messagesReceived = 0;
 int messagesMissed = 0;
 
@@ -92,8 +97,10 @@ void loop(){ // Field Testing Variant Code
     digitalWrite(A5,HIGH); // Turn LED on to show how long receiving takes.
     unsigned char *mess=LR.getMessage();
     digitalWrite(A5,LOW); // Turn off LED
+
+    printMessage(mess,inMsgLen);
     
-    if(inMsgLen == 8){ // If input correct length
+    //if(inMsgLen == 8){ // If input correct length
       if(mess[0] == 1 && mess[2] == 2 && mess[4] == 3 && mess[6] == 4){ // If registers fit correct pattern
         if(mess[1] == mess[5] && mess[3] == mess[7]){ // If the high values and low values for each 2-byte number match up (i.e. numbers the same)
           messagesReceived++;
@@ -113,9 +120,9 @@ void loop(){ // Field Testing Variant Code
       }else{
         valueErrors++;
       }
-    }else{
-      lengthErrors++;
-    }
+    //}else{
+      //lengthErrors++;
+    //}
   }
   
   if(millis()-startTime > 10000){ // End of test
@@ -126,14 +133,28 @@ void loop(){ // Field Testing Variant Code
     float percentValueErrors = (valueErrors * 100.0) / (totalReceived * 1.0); // Percentage
     float percentLengthErrors = (lengthErrors * 100.0) / (totalReceived * 1.0); // Percentage
     
-    Serial.println("Test over. The results are in: \n");
-    Serial.print("Received "); Serial.print(messagesReceived); Serial.println(" perfect messages over 10 seconds.");
-    Serial.print("Bitrate: "); Serial.print((messagesReceived*64)/10); Serial.println("bps");
+    Serial.println("\n Test over. The results are in: \n");
+    Serial.println("Received "); Serial.print(totalReceived); Serial.println(" messages over 10 seconds.");
+    Serial.print(messagesReceived); Serial.println(" of which were perfect.");
+    Serial.print("Bitrate: "); Serial.print((totalReceived*64)/10); Serial.print("bps. (LoRa claims BPS is: "); Serial.print(SX.getLorabps()); Serial.println(")");
     Serial.print("Missed "); Serial.print(missed); Serial.print("% of messages ("); Serial.print(messagesMissed); Serial.println(" messages)");
-    Serial.print("Accuracy: "); Serial.print(correct); Serial.println("% of messages had no errors");
-    Serial.print("--------- "); Serial.print(percentValueErrors); Serial.println("% of messages contained unexpected values");
-    Serial.print("--------- "); Serial.print(percentLengthErrors); Serial.println("% of messages were of unexpected length");
+    Serial.print("Accuracy: "); Serial.print(correct); Serial.print("% of messages had no errors ("); Serial.print(messagesMissed); Serial.println(" messages)");
+    Serial.print("--------- "); Serial.print(percentValueErrors); Serial.print("% of messages contained unexpected values ("); Serial.print(valueErrors); Serial.println(" messages)");
+    Serial.print("--------- "); Serial.print(percentLengthErrors); Serial.print("% of messages were of unexpected length ("); Serial.print(lengthErrors); Serial.println(" messages)");
+    while (true);
   }
   
+}
+
+void printMessage(char* mess, int len){
+  for(int i=0;i<len;i++){
+    Serial.print(String(int(mess[i])));
+    if(i % 2 == 0){
+      Serial.print(":");
+    }else{
+      Serial.print(",");
+    }
+  }
+  Serial.println();
 }
 

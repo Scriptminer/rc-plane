@@ -3,7 +3,7 @@
 
 /*** Network values ***/
 #define DEVRANGE 4       // 1 to 15 
-#define LORANET 333      // choosed from 0 to 16383
+#define LORANET 333      // chosen from 0 to 16383
 #define KEYVAL 111       // criptography key (must be the same for all devices.
 
 /*** sender address ***/
@@ -31,13 +31,15 @@ LORA LR;             //class instance
 void setup() 
 {
   Serial.begin(115200);
-  pinMode(A5,OUTPUT);
+  Serial.println("Starting up...");
+  pinMode(A0,OUTPUT);
   
   long startSetupTime = millis();
-  setupLoRa();
   
   if (!LR.begin(KEYVAL)) //initialise LoRa radio
-    {Serial.println("LoRa.begin() Failed! Stopping!");return;}
+    {Serial.println("LoRa.begin failed! Stopping!");return;}
+  
+  setupLoRa();
 
   configLoRaUplink(); // Current setup broadcasts uplink signals only.
   Serial.print("Setup successful, took: "); Serial.print(millis()-startSetupTime); Serial.println("ms.");
@@ -46,7 +48,7 @@ void setup()
 
 void setupLoRa(){
   // Does all the setup prior to beginning running LoRa
-  LR.setConfig(7,3,4); // Sets the spreading factor to 7, bandwidth BW = 3 -> 20.8kHz (legal max is 25kHz)
+  LR.setConfig(7,3,1); // Sets the spreading factor to 7, bandwidth BW = 3 -> 20.8kHz (legal max is 25kHz), redundancy rate (CR) to 1 - lowest redundancy
 
   /* Network definition */
   LR.defDevRange(DEVRANGE);
@@ -78,8 +80,9 @@ void loop(){
   addTelemetry(4,low);
   counter++;
   
-  digitalWrite(A0,HIGH); // Turn LED on to show how long sending takes.
-  LR.sendNetMess(TOADD,MYADD,telemetryBuffer,telemetryBufferPos);
-  digitalWrite(A0,LOW); // Turn LED off
+  digitalWrite(A0,LOW); // Turn LED on to show how long sending takes.
+  int didMyMessageSendBecauseIreallyWantToKnow = LR.sendNetMess(TOADD,MYADD,telemetryBuffer,telemetryBufferPos);
+  digitalWrite(A0,HIGH); // Turn LED off
+  Serial.println(didMyMessageSendBecauseIreallyWantToKnow); // Returns 0 if sent, -1 if problem.
   telemetryBufferPos = 0; // Restarts buffer for new data
 }
