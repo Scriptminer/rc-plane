@@ -1,16 +1,9 @@
 
-////////// Pin Numbers //////////
-#define ELEVATOR_PIN A1
-#define AILERON_PIN A0
-#define THROTTLE_PIN A2
-#define RUDDER_PIN A3
-#define BUTTON_PIN A4
-//////////
-
-#define potLOW 0 // Minimum potentiometer reading is 0.0V
-#define potHIGH 676 // Maximum potentiometer analogRead value (for 3.3 volts)
-
 #include "Controls.h"
+#include "Buttons.h"
+
+// Constants:
+const int trimStep = 1; // Degrees to step trim per click
 
 void setup() {
   // put your setup code here, to run once:
@@ -19,18 +12,51 @@ void setup() {
 }
 
 void loop() {
-  // Control surface classes, initiated with the ranges of the controls: inputMin,inputMax,servoMin,servoCentre,servoMax:
-  static CONTROL ailerons (potLOW,potHIGH,30,90,150);
-  static CONTROL elevator (potLOW,potHIGH,30,90,150);
-  static CONTROL rudder   (potLOW,potHIGH,30,90,150);
-  static CONTROL throttle (potLOW,potHIGH,00,90,180);
-
+  // Control surface classes, initiated with the ranges of the controls: inputMin,inputMax,servoMin,servoCentre,servoMax,maxTrimDeviation:
+  static CONTROL ailerons (potLOW,potHIGH,30,90,150,20);
+  static CONTROL elevator (potLOW,potHIGH,30,90,150,20);
+  static CONTROL rudder   (potLOW,potHIGH,30,90,150,20);
+  static CONTROL throttle (potLOW,potHIGH,0 ,90,180,0 );
+  
   // Update the servo positions for each control surface:
   ailerons.updateServoPosition(analogRead(AILERON_PIN));
   elevator.updateServoPosition(analogRead(ELEVATOR_PIN));
   rudder.updateServoPosition(analogRead(RUDDER_PIN));
   throttle.updateServoPosition(analogRead(THROTTLE_PIN));
+  
+  // Handle button presses:
+  switch ( getButtonPressed(analogRead(BUTTON_PIN)) ){
+    case 0:
+      break;
+    case left_arrow:
+      ailerons.adjustTrim(trimStep);
+      break;
+    case right_arrow:
+      ailerons.adjustTrim(-trimStep);
+      break;
+    case up_arrow:
+      elevator.adjustTrim(trimStep);
+      break;
+    case down_arrow:
+      elevator.adjustTrim(-trimStep);
+      break;
+    case left_skip:
+      rudder.adjustTrim(trimStep);
+      break;
+    case right_skip:
+      rudder.adjustTrim(-trimStep);
+      break;
 
+    case centre_button:
+      ailerons.resetTrim();
+      elevator.resetTrim();
+      break;
+    case star_button:
+      rudder.resetTrim();
+      break;
+  }
+  
+  
   // Print servo positions:
   Serial.print("0,180,");
   Serial.print(ailerons.pos);Serial.print(",");
@@ -38,5 +64,3 @@ void loop() {
   Serial.print(rudder.pos);Serial.print(",");
   Serial.print(throttle.pos);Serial.println();
 }
-
-

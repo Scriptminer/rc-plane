@@ -3,15 +3,17 @@
 class CONTROL {
   public:
     int inMIN, inMAX, outMIN, outCENTRE, outMAX; // Control range cannot be changed (outCENTRE refers to the default centre position)
+    int maxTrimDeviation; // How far from the default centre can the trim be
     int trimCENTRE; // The output servo value which becomes the new centrepoint (i.e. the value that is read out when the stick is in the middle)
     int pos; // Current servo position
     
-    CONTROL (int _inMIN, int _inMAX, int _outMIN, int _outCENTRE, int _outMAX){
+    CONTROL (int _inMIN, int _inMAX, int _outMIN, int _outCENTRE, int _outMAX, int _maxTrimDeviation){
       inMIN = _inMIN;
       inMAX = _inMAX;
       outMIN = _outMIN;
       outCENTRE = _outCENTRE;
       outMAX = _outMAX;
+      maxTrimDeviation = _maxTrimDeviation;
       
       trimCENTRE = outCENTRE; // Trim centre defaults to the actual centre position.
     }
@@ -22,6 +24,14 @@ class CONTROL {
       pos = mapControlValue(avgPinReading);
       
       return pos;
+    }
+
+    void adjustTrim(int d){
+      trimCENTRE = constrain(trimCENTRE + d, outCENTRE-maxTrimDeviation, outCENTRE+maxTrimDeviation);
+    }
+
+    void resetTrim(){
+      trimCENTRE = outCENTRE;
     }
   
   private:
@@ -45,49 +55,5 @@ class CONTROL {
       }
     }
 };
-
-
-////////// Button analogRead values (assuming 3.3V is supplied)
-#define noButton 695
-
-#define centreButton 352
-#define left_arrow 308
-#define right_arrow 403
-#define up_arrow 460
-#define down_arrow 270
-
-#define left_skip 58
-#define right_skip 146
-#define camera 224
-#define video 189
-#define star_button 96
-
-#define left_button 14
-#define right_button 506
-
-#define num_buttons 13 // Number of different buttons in buttons[], inclusive of unpressed state
-#define tolerance 4 // How close reading must be to actual button value
-
-int buttons[] = {noButton,centreButton,left_arrow,right_arrow,up_arrow,down_arrow,left_skip,right_skip,camera,video,star_button,left_button,right_button};
-
-int getButtonPressed(int pinReading) {
-  static int buttonPressed = 0; // The current button being pressed
-  static int prevButtonPressed = 0; // The previous button being pressed
-  
-  int pinMin = pinReading - tolerance;
-  int pinMax = pinReading + tolerance;
-  
-  for(int i=0;i<num_buttons;i++){
-    if(pinMin < buttons[i] && pinMax > buttons[i]){ // If button i is currently pressed:
-      if(prevButtonPressed == i){ // If button i was also held down last time:
-        buttonPressed = i; // Change buttonPressed to the current button
-      }
-      prevButtonPressed = i;
-      break;
-    }
-  }
-
-  return buttonPressed;
-}
 
 
