@@ -1,3 +1,4 @@
+
 /*#include <MPU6050_9Axis_MotionApps41.h>
 #include <helper_3dmath.h>
 #include <MPU6050.h>
@@ -9,7 +10,7 @@
 #include <LORA.h>*/
 // newLora
 #include <SPI.h>
-//#include <LoRa.h>
+#include <LoRa.h>
 
 #include <Servo.h>
 //#include <OneWire.h>
@@ -125,21 +126,12 @@ void setup(){
   
   // LORA Setup
 
-  /*if(!LR.begin(cryptoKey)){ oldLora
-    // Nothing happens
-  }*/
-
-  // newLora
-
-  /*if (!LoRa.begin(433E6)) { // 433MHz
+  if (!LoRa.begin(433E6)) { // 433MHz
     digitalWrite(controlStateLED,HIGH);
     while (true); // Stops the program
-  }*/
+  }
 
   /*sensors.begin();*/ 
-  
-  /*LR.defDevRange(6); oldLora
-  LR.defNetAddress(network);*/
 }
 
 ///////////////////// CORE LOOP /////////////////////
@@ -152,46 +144,20 @@ void loop(){
   
   // Receive Incoming Data
 
-  /*int msgLength = LR.receiveNetMess(planeDev,groundDev, big_buffer, big_buffer_len); // Receives message, as DEV2 (plane), from DEV1 (ground) oldLora
-  if(msgLength > 0){
-    lastSignal = micros();
-    byte* inMessage = LR.getMessage();
-    redirectIncomingData(inMessage, msgLength);
-  }*/
-
-  // newLora
-  /*int packetSize = LoRa.parsePacket();
-  if(packetSize > 0 && packetSize < maxRadioMsg){
-    // received a packet
-    Serial.print("Received packet of length ");
-    Serial.print(packetSize);
-    Serial.print(" :");
+  int packetSize = LoRa.parsePacket();
+  if(packetSize > 0 && packetSize <= maxRadioMsg){
 
     byte inMessage[packetSize];
-    
-    for(int i=0;i<packetSize;i++){
+    int i = 0;
+    while (LoRa.available()) {
       byte inByte = LoRa.read();
       inMessage[i] = inByte;  
-      Serial.print((char) inByte);
+      Serial.print((int) inByte); Serial.print(",");
+      i++;
     }
-    redirectIncomingData(inMessage, packetSize);
-    lastSignal = micros();
-  }*/
+    Serial.println();
 
-  // Serial alternative
-  
-  char eol = 0;
-  int charOffset = 1;
-  
-  if(Serial.available()){
-    byte inData[64];
-    int dataLength = Serial.readBytesUntil(eol,(char*) inData,64);
-    
-    for(int i=0;i<dataLength;i++){
-      int num = ((int) inData[i]) - charOffset;
-      inData[i] = (byte) num;
-    }
-    redirectIncomingData(inData, dataLength);
+    redirectIncomingData(inMessage, packetSize);
     lastSignal = micros();
   }
 
@@ -248,7 +214,7 @@ void loop(){
     /*sensors.requestTemperatures();
     sensors.getTempCByIndex(0);*/
     // Send all telemetry data
-    sendTelemetry();
+    //sendTelemetry();
   }
   
   loops++;

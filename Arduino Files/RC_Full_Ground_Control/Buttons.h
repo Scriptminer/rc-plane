@@ -1,35 +1,35 @@
 
 // Pin Numbers:
-#define ELEVATOR_PIN A1
-#define AILERON_PIN A0
+#define ELEVATOR_PIN A0
+#define AILERON_PIN A1
 #define THROTTLE_PIN A2
 #define RUDDER_PIN A3
 #define BUTTON_PIN A4
 
 // analogRead LOW and analogRead HIGH:
 #define potLOW 0 // Minimum potentiometer reading is 0.0V
-#define potHIGH 676 // Maximum potentiometer analogRead value (for 3.3 volts)
+#define potHIGH 1023 // Maximum potentiometer analogRead value (analogReference is tied to the 3.3V supply which supplies the potentiometers)
 
 // Button analogRead values (assuming 3.3V is supplied):
-#define no_button 695
+#define no_button 1023
 
-#define centre_button 352 // Reset elevator/aileron trim
-#define left_arrow 308 // Trim ailerons left
-#define right_arrow 403 // Trim ailerons right
-#define up_arrow 460 // Trim elevator up
-#define down_arrow 270 // Trime elevator down
+#define centre_button 530 // Reset elevator/aileron trim
+#define left_arrow 463 // Trim ailerons left
+#define right_arrow 606 // Trim ailerons right
+#define up_arrow 691 // Trim elevator up
+#define down_arrow 406 // Trime elevator down
 
-#define left_skip 58 // Trim rudder left
-#define right_skip 146 // Trim rudder right
-#define camera 224
-#define video 189
-#define star_button 96 // Reset rudder trim
+#define left_skip 88 // Trim rudder left
+#define right_skip 221 // Trim rudder right
+#define camera 338
+#define video 284
+#define star_button 146 // Reset rudder trim
 
-#define left_button 14
-#define right_button 506
+#define left_button 22
+#define right_button 760
 
 #define numButtons 13 // Number of different buttons in buttons[], inclusive of unpressed state
-#define tolerance 2 // How close reading must be to actual button value
+#define tolerance 10 // How close reading must be to actual button value
 
 int buttons[] = {no_button,centre_button,left_arrow,right_arrow,up_arrow,down_arrow,left_skip,right_skip,camera,video,star_button,left_button,right_button};
 

@@ -10,6 +10,7 @@ const int trimStep = 1; // Degrees to step trim per click
 
 void setup() {
   // put your setup code here, to run once:
+  analogReference(EXTERNAL); // Connected to the 3.3V supply
   pinMode(BUTTON_PIN,INPUT_PULLUP);
   Serial.begin(115200);
 
@@ -36,28 +37,28 @@ void loop() {
   elevator.updateServoPosition(analogRead(ELEVATOR_PIN));
   rudder.updateServoPosition(analogRead(RUDDER_PIN));
   throttle.updateServoPosition(analogRead(THROTTLE_PIN));
-  
+
   // Handle button presses:
-  switch ( getButtonPressed(analogRead(BUTTON_PIN)) ){
-    case 0:
+  switch (getButtonPressed(analogRead(BUTTON_PIN))) {
+    case no_button:
       break;
     case left_arrow:
-      ailerons.adjustTrim(trimStep);
-      break;
-    case right_arrow:
       ailerons.adjustTrim(-trimStep);
       break;
-    case up_arrow:
-      elevator.adjustTrim(trimStep);
+    case right_arrow:
+      ailerons.adjustTrim(trimStep);
       break;
-    case down_arrow:
+    case up_arrow:
       elevator.adjustTrim(-trimStep);
       break;
+    case down_arrow:
+      elevator.adjustTrim(trimStep);
+      break;
     case left_skip:
-      rudder.adjustTrim(trimStep);
+      rudder.adjustTrim(-trimStep);
       break;
     case right_skip:
-      rudder.adjustTrim(-trimStep);
+      rudder.adjustTrim(trimStep);
       break;
 
     case centre_button:
@@ -71,12 +72,10 @@ void loop() {
 
   // Print servo positions:
   /*Serial.print("0,180,");
-  Serial.print(analogRead(A5));Serial.print(",");
   Serial.print(ailerons.pos);Serial.print(",");
   Serial.print(elevator.pos);Serial.print(",");
   Serial.print(rudder.pos);Serial.print(",");
   Serial.print(throttle.pos);Serial.println();*/
-
   // Receive data from PI
   
   // Transmit data to plane
