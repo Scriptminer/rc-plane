@@ -20,7 +20,7 @@ class CONTROL {
 
     int updateServoPosition(int newPinReading){
       // Update avgPinReading to the rolling average of it's previous value + incoming reading:
-      avgPinReading  = ((avgPinReading  * (8-1)) + newPinReading )  / 8;
+      avgPinReading  = ((avgPinReading  * (4-1)) + newPinReading )  / 4;
       pos = mapControlValue(avgPinReading);
       
       return pos;

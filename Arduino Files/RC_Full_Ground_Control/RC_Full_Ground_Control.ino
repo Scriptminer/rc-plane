@@ -1,4 +1,7 @@
 
+#include <SPI.h>
+#include <LoRa.h>
+
 #include "Controls.h"
 #include "Buttons.h"
 
@@ -9,6 +12,16 @@ void setup() {
   // put your setup code here, to run once:
   pinMode(BUTTON_PIN,INPUT_PULLUP);
   Serial.begin(115200);
+
+
+  // Begin LoRa:
+  if (!LoRa.begin(433E6)) {
+    Serial.println("Starting LoRa failed!");
+    while (1); // If LoRa doesn't begin, stop execution.
+  }
+  
+  LoRa.setTxPower(2); // 10dBm, which is 10mW (2dBm = 1.5849mW, 10dBm = 10mW, 20dBm = 100mW)
+
 }
 
 void loop() {
@@ -55,12 +68,34 @@ void loop() {
       rudder.resetTrim();
       break;
   }
-  
-  
+
   // Print servo positions:
-  Serial.print("0,180,");
+  /*Serial.print("0,180,");
+  Serial.print(analogRead(A5));Serial.print(",");
   Serial.print(ailerons.pos);Serial.print(",");
   Serial.print(elevator.pos);Serial.print(",");
   Serial.print(rudder.pos);Serial.print(",");
-  Serial.print(throttle.pos);Serial.println();
+  Serial.print(throttle.pos);Serial.println();*/
+
+  // Receive data from PI
+  
+  // Transmit data to plane
+  char data[8] = {0,ailerons.pos,1,elevator.pos,2,rudder.pos,3,throttle.pos};
+  transmitToPlane(data,8);
+  
+  // Receive data from plane
+  
+  // Feedback data to PI: (remember to include status data for UNO e.g. loops per second)
+  
+  
+
 }
+
+void transmitToPlane(char txdata[], int len){
+  LoRa.beginPacket();
+  for(int i=0;i<len;i++){
+    LoRa.print(txdata[i]);
+  }
+  LoRa.endPacket();
+}
+
