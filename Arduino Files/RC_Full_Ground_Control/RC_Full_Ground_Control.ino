@@ -79,7 +79,7 @@ void loop() {
   // Receive data from PI
   
   // Transmit data to plane
-  char data[8] = {0,ailerons.pos,1,elevator.pos,2,rudder.pos,3,throttle.pos};
+  char data[8] = {1,ailerons.getPos(),2,elevator.getPos(),3,rudder.getPos(),4,throttle.getPos()};
   transmitToPlane(data,8);
   
   // Receive data from plane

@@ -1,19 +1,7 @@
 
-
 class CONTROL {
   public:
-    int inMIN, inMAX, outMIN, outCENTRE, outMAX; // Control range cannot be changed (outCENTRE refers to the default centre position)
-    int maxTrimDeviation; // How far from the default centre can the trim be
-    int trimCENTRE; // The output servo value which becomes the new centrepoint (i.e. the value that is read out when the stick is in the middle)
-    int pos; // Current servo position
-    
-    CONTROL (int _inMIN, int _inMAX, int _outMIN, int _outCENTRE, int _outMAX, int _maxTrimDeviation){
-      inMIN = _inMIN;
-      inMAX = _inMAX;
-      outMIN = _outMIN;
-      outCENTRE = _outCENTRE;
-      outMAX = _outMAX;
-      maxTrimDeviation = _maxTrimDeviation;
+    CONTROL (int readingMIN,int readingMAX,int servoMIN,int servoCENTRE,int servoMAX,int max_trim_deviation) : inMIN(readingMIN), inMAX(readingMAX), outMIN(servoMIN), outCENTRE(servoCENTRE), outMAX(servoMAX), maxTrimDeviation(max_trim_deviation) {
       
       trimCENTRE = outCENTRE; // Trim centre defaults to the actual centre position.
     }
@@ -33,9 +21,17 @@ class CONTROL {
     void resetTrim(){
       trimCENTRE = outCENTRE;
     }
+
+    int getPos(){ return pos; };
+    int getTrimCentre(){ return trimCENTRE; };
   
   private:
+    const int inMIN, inMAX, outMIN, outCENTRE, outMAX; // Control range cannot be changed (outCENTRE refers to the default centre position)
+    const int maxTrimDeviation; // How far from the default centre can the trim be
+    
     int avgPinReading; // Hold the rolling average analog read values for this pin
+    int pos; // Current servo position
+    int trimCENTRE; // The output servo value which becomes the new centrepoint (i.e. the value that is read out when the stick is in the middle)
 
     int mapControlValue(int pinReading){
       // Map the input pinReading to an output servo value //
