@@ -55,76 +55,49 @@ class FLIGHT_DATA {
       if((inLength%2)!=0){ // If array is not a multiple of 2, an error has occurred
         return false; // Failure
       }
-      
-      // Storing variables for messages that need multiple sends to go through (safety mechanism)
-      int prevDropMsg = 9001;
-      int prevAutoMsg = 9001;
 
       int messageLength = inLength/2; // Number of commands from ground
       
       for(int i=0;i<messageLength;i++){ // Cycles through all incoming registers
-         int inRegister = (int) inBytes[i*2];
-         int inValue = (int) inBytes[(i*2)+1];
+         int inRegister = (unsigned int) inBytes[i*2];
+         int inValue = (unsigned int) inBytes[(i*2)+1];
+         
          switch(inRegister){
-          case 0: // Nothing sent to this register - do nothing
-            break;
-          case 1:  // Aileron Register //
+          case reg_setAilerons:
             aileronPos = inValue;
-            //Serial.println("changing ailerons");
             break;
-          case 2:  // Elevator Register //
+            
+          case reg_setElevator:
             elevatorPos = inValue;
-            //Serial.println("changing Elevator");
             break;
-          case 3:  // Rudder Register //
+            
+          case reg_setRudder:
             rudderPos = inValue;
-            //Serial.println("changing Rudder");
             break;
-          case 4:  // Throttle Register //
+            
+          case reg_setThrottle:
             throttlePos = inValue;
             break;
-          case 5: // Drop Door Register //
-            if(prevDropMsg == inValue){ // If this message and the last to this register are identical
-              //Serial.println("changing Drop Door");
-              if(inValue == 100){ // Unlock door
-                doorPos = unlockedPos;
-                TelemetryManager->addTelemetry(groundregDROP,inValue);
-              }
-              if(inValue == 200){ // Lock door
-                doorPos = lockedPos;
-                TelemetryManager->addTelemetry(groundregDROP,inValue);
-              }
-            }else if(prevDropMsg != 9001){ // Two messages received, both different
-              TelemetryManager->addTelemetry(groundregCONFLICT,B10000000);
+            
+          case reg_setDropDoor: // Drop Door Register //
+            if(inValue == unlockDoorSignal){ // Unlock door
+              doorPos = unlockedPos;
+              TelemetryManager->addTelemetry(reg_dropDoorState,inValue);
             }
-            prevDropMsg = inValue;
+            if(inValue == lockDoorSignal){ // Lock door
+              doorPos = lockedPos;
+              TelemetryManager->addTelemetry(reg_dropDoorState,inValue);
+            }
             break;
-          case 6: // LED Register
-            break;
-          case 7: // Other Onboard Controls //
-            break;
-          case 8: // Other Onboard Controls //
-            break;
-          case 9:  // Autopilot Toggles //
+            
+          //case 9:  // Autopilot Toggles //
             /*if(prevAutoMsg == inValue){ // If this message and the last to this register are identical
               controlState = (int) (inValue >> 6); // Set controlState to first 2 bits converted to int
             }else if(prevAutoMsg != 9001){ // Two messages received, both different
               TelemetryManager.addTelemetry(groundregCONFLICT,B01000000);
             }
             prevAutoMsg = inValue;*/
-            break;
-          case 10:
-            break;
-          case 11: // Setup Register
-            break;
-          case 12:
-            break;
-          case 13:
-            break;
-          case 14:
-            break;
-          case 15:
-            break;       
+            //break; 
         }
       }
       return true; // Success, or message was of 0 length

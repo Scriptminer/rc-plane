@@ -112,15 +112,15 @@ void loop(){
   
   if(ThisFlight.timeForTelemetry(telemetryInterval)){ // If it is time to send telemetry
     int loopsPerSecond = constrain( ThisFlight.getLoopsPerSecond(), 0, 255 );
-    ThisFlight.TelemetryManager->addTelemetry(groundregLOOP,loopsPerSecond);
+    ThisFlight.TelemetryManager->addTelemetry(reg_onboardLoopSpeed,loopsPerSecond);
     
-    ThisFlight.TelemetryManager->addTelemetry(groundregRSSI,ThisFlight.Radio->getAvgRSSI()); // Received signal strength
+    ThisFlight.TelemetryManager->addTelemetry(reg_onboardRSSI,ThisFlight.Radio->getAvgRSSI()); // Received signal strength
 
-    ThisFlight.TelemetryManager->addTelemetry(groundregAUTOMODE,ThisFlight.getControlState()); // Control Status (normal or "autopilot")
+    ThisFlight.TelemetryManager->addTelemetry(reg_currentControlState,ThisFlight.getControlState()); // Control Status (normal or "autopilot")
 
     // Add telemetry for number of corrupted messages
     // Sensors:
-    ThisFlight.TelemetryManager->addTelemetry(groundregBATT_VOLTAGE,ThisFlight.SensorManager->getBatteryVoltage());
+    ThisFlight.TelemetryManager->addTelemetry(reg_currentBattVoltage,ThisFlight.SensorManager->getBatteryVoltage());
     /*sensors.requestTemperatures();
     sensors.getTempCByIndex(0);*/
     

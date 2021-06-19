@@ -4,6 +4,7 @@
 
 #include "Controls.h"
 #include "Buttons.h"
+#include "CommonConstants.h"
 
 // Constants:
 const int trimStep = 1; // Degrees to step trim per click
@@ -25,12 +26,17 @@ void setup() {
 
 }
 
+BUTTON_HANDLER ButtonHandler;
+
 void loop() {
   // Control surface classes, initiated with the ranges of the controls: inputMin,inputMax,servoMin,servoCentre,servoMax,maxTrimDeviation:
   static CONTROL ailerons (potLOW,potHIGH,30,90,150,20);
   static CONTROL elevator (potLOW,potHIGH,30,90,150,20);
   static CONTROL rudder   (potLOW,potHIGH,30,90,150,20);
   static CONTROL throttle (potLOW,potHIGH,0 ,90,180,0 );
+
+  byte radioTransmitBuffer[maxRadioMessageLength];
+  int radioTransmitBufferPos = 0;
   
   // Update the servo positions for each control surface:
   ailerons.updateServoPosition(analogRead(AILERON_PIN));
@@ -38,36 +44,73 @@ void loop() {
   rudder.updateServoPosition(analogRead(RUDDER_PIN));
   throttle.updateServoPosition(analogRead(THROTTLE_PIN));
 
+  radioTransmitBuffer[0] = reg_setAilerons; radioTransmitBuffer[1] = ailerons.getPos(),
+  radioTransmitBuffer[2] = reg_setElevator; radioTransmitBuffer[3] = elevator.getPos(),
+  radioTransmitBuffer[4] = reg_setRudder;   radioTransmitBuffer[5] = rudder.getPos(),
+  radioTransmitBuffer[6] = reg_setThrottle; radioTransmitBuffer[7] = throttle.getPos(),
+  
+  radioTransmitBufferPos = 8;
+  
+  //Serial.println(analogRead(BUTTON_PIN));
+  
   // Handle button presses:
-  switch (getButtonPressed(analogRead(BUTTON_PIN))) {
-    case no_button:
-      break;
-    case left_arrow:
-      ailerons.adjustTrim(-trimStep);
-      break;
-    case right_arrow:
-      ailerons.adjustTrim(trimStep);
-      break;
-    case up_arrow:
-      elevator.adjustTrim(-trimStep);
-      break;
-    case down_arrow:
-      elevator.adjustTrim(trimStep);
-      break;
-    case left_skip:
-      rudder.adjustTrim(-trimStep);
-      break;
-    case right_skip:
-      rudder.adjustTrim(trimStep);
-      break;
+  int buttonPressed = ButtonHandler.getButtonPressed(analogRead(BUTTON_PIN));
+  unsigned long timePressed = ButtonHandler.getPressedTime();
+  if( ButtonHandler.pressHandled() == false) {
+    // Buttons that require only a short press (50ms):
+    if(timePressed > 50){
+      switch ( buttonPressed ) {
+        case no_button:
+          ButtonHandler.updatePressHandled();
+          break;
+        case left_arrow:
+          ailerons.adjustTrim(-trimStep);
+          ButtonHandler.updatePressHandled();
+          break;
+        case right_arrow:
+          ailerons.adjustTrim(trimStep);
+          ButtonHandler.updatePressHandled();
+          break;
+        case up_arrow:
+          elevator.adjustTrim(-trimStep);
+          ButtonHandler.updatePressHandled();
+          break;
+        case down_arrow:
+          elevator.adjustTrim(trimStep);
+          ButtonHandler.updatePressHandled();
+          break;
+        case left_skip:
+          rudder.adjustTrim(-trimStep);
+          ButtonHandler.updatePressHandled();
+          break;
+        case right_skip:
+          rudder.adjustTrim(trimStep);
+          ButtonHandler.updatePressHandled();
+          break;
+    
+        case centre_button:
+          ailerons.resetTrim();
+          elevator.resetTrim();
+          ButtonHandler.updatePressHandled();
+          break;
+        case star_button:
+          rudder.resetTrim();
+          ButtonHandler.updatePressHandled();
+          break;
+      }
+    }
 
-    case centre_button:
-      ailerons.resetTrim();
-      elevator.resetTrim();
-      break;
-    case star_button:
-      rudder.resetTrim();
-      break;
+    // Buttons that require a long press (1 second):
+    if(timePressed > 1000){
+      switch(buttonPressed){
+        case camera_button:
+          radioTransmitBuffer[radioTransmitBufferPos] = reg_setDropDoor;
+          radioTransmitBuffer[radioTransmitBufferPos+1] = unlockDoorSignal; // There isn't currently any provision for returning the servo to the closed position, as this with the current setup is unnecessary.
+          radioTransmitBufferPos += 2;
+          ButtonHandler.updatePressHandled();
+          break;
+      }
+    }
   }
 
   // Print servo positions:
@@ -79,8 +122,10 @@ void loop() {
   // Receive data from PI
   
   // Transmit data to plane
-  char data[8] = {1,ailerons.getPos(),2,elevator.getPos(),3,rudder.getPos(),4,throttle.getPos()};
-  transmitToPlane(data,8);
+
+  
+  transmitToPlane(radioTransmitBuffer,radioTransmitBufferPos);
+  //Serial.println(ButtonHandler.getPressedTime());
   
   // Receive data from plane
   
