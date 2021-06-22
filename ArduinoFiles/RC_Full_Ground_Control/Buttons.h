@@ -29,7 +29,7 @@
 #define right_button 760
 
 #define numButtons 13 // Number of different buttons in buttons[], inclusive of unpressed state
-#define tolerance 10 // How close reading must be to actual button value
+#define tolerance 15 // How close reading must be to actual button value
 
 class BUTTON_HANDLER {
   public:

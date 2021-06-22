@@ -5,28 +5,32 @@
 #include "Controls.h"
 #include "Buttons.h"
 #include "CommonConstants.h"
+#include "Radio.h"
+#include "DataManager.h"
 
 // Constants:
 const int trimStep = 1; // Degrees to step trim per click
+
+BUTTON_HANDLER ButtonHandler;
+DATA_MANAGER TelemetryManager(new byte[64], 64);
+DATA_MANAGER RadioDataManager(new byte[maxRadioMessageLength], maxRadioMessageLength);
+RADIO Radio(maxRadioMessageLength);
 
 void setup() {
   // put your setup code here, to run once:
   analogReference(EXTERNAL); // Connected to the 3.3V supply
   pinMode(BUTTON_PIN,INPUT_PULLUP);
-  Serial.begin(115200);
+  Serial.begin(38400);
 
+  RadioDataManager.addData(reg_setDropDoor,lockDoorSignal); // Door is put in locked position initially
 
-  // Begin LoRa:
-  if (!LoRa.begin(433E6)) {
-    Serial.println("Starting LoRa failed!");
+  // LoRa Setup:
+  if (!Radio.begin(433E6,2)){ // Frequency, txPower in dBm (2dBm = 1.5849mW, 10dBm = 10mW, 20dBm = 100mW)
     while (1); // If LoRa doesn't begin, stop execution.
+  }else{
   }
-  
-  LoRa.setTxPower(2); // 10dBm, which is 10mW (2dBm = 1.5849mW, 10dBm = 10mW, 20dBm = 100mW)
 
 }
-
-BUTTON_HANDLER ButtonHandler;
 
 void loop() {
   // Control surface classes, initiated with the ranges of the controls: inputMin,inputMax,servoMin,servoCentre,servoMax,maxTrimDeviation:
@@ -35,8 +39,12 @@ void loop() {
   static CONTROL rudder   (potLOW,potHIGH,30,90,150,20);
   static CONTROL throttle (potLOW,potHIGH,0 ,90,180,0 );
 
-  byte radioTransmitBuffer[maxRadioMessageLength];
-  int radioTransmitBufferPos = 0;
+  static unsigned long currentTime = 0; // Time since program start
+  static unsigned long nextTelemetryTime = 0; // Time at which the next telemetry packet should be sent
+  static int avgLoopTime;
+  
+  avgLoopTime = (avgLoopTime + (millis()-currentTime)) / 2; // Take rolling average of loop times
+  currentTime = millis();
   
   // Update the servo positions for each control surface:
   ailerons.updateServoPosition(analogRead(AILERON_PIN));
@@ -44,14 +52,10 @@ void loop() {
   rudder.updateServoPosition(analogRead(RUDDER_PIN));
   throttle.updateServoPosition(analogRead(THROTTLE_PIN));
 
-  radioTransmitBuffer[0] = reg_setAilerons; radioTransmitBuffer[1] = ailerons.getPos(),
-  radioTransmitBuffer[2] = reg_setElevator; radioTransmitBuffer[3] = elevator.getPos(),
-  radioTransmitBuffer[4] = reg_setRudder;   radioTransmitBuffer[5] = rudder.getPos(),
-  radioTransmitBuffer[6] = reg_setThrottle; radioTransmitBuffer[7] = throttle.getPos(),
-  
-  radioTransmitBufferPos = 8;
-  
-  //Serial.println(analogRead(BUTTON_PIN));
+  RadioDataManager.addData(reg_setAilerons, ailerons.getPos());
+  RadioDataManager.addData(reg_setElevator, elevator.getPos());
+  RadioDataManager.addData(reg_setRudder,   rudder.getPos());
+  RadioDataManager.addData(reg_setThrottle, throttle.getPos());
   
   // Handle button presses:
   int buttonPressed = ButtonHandler.getButtonPressed(analogRead(BUTTON_PIN));
@@ -59,87 +63,92 @@ void loop() {
   if( ButtonHandler.pressHandled() == false) {
     // Buttons that require only a short press (50ms):
     if(timePressed > 50){
+      ButtonHandler.updatePressHandled();
       switch ( buttonPressed ) {
         case no_button:
-          ButtonHandler.updatePressHandled();
           break;
         case left_arrow:
           ailerons.adjustTrim(-trimStep);
-          ButtonHandler.updatePressHandled();
           break;
         case right_arrow:
           ailerons.adjustTrim(trimStep);
-          ButtonHandler.updatePressHandled();
           break;
         case up_arrow:
           elevator.adjustTrim(-trimStep);
-          ButtonHandler.updatePressHandled();
           break;
         case down_arrow:
           elevator.adjustTrim(trimStep);
-          ButtonHandler.updatePressHandled();
           break;
         case left_skip:
           rudder.adjustTrim(-trimStep);
-          ButtonHandler.updatePressHandled();
           break;
         case right_skip:
           rudder.adjustTrim(trimStep);
-          ButtonHandler.updatePressHandled();
           break;
     
         case centre_button:
           ailerons.resetTrim();
           elevator.resetTrim();
-          ButtonHandler.updatePressHandled();
           break;
         case star_button:
           rudder.resetTrim();
-          ButtonHandler.updatePressHandled();
           break;
       }
     }
 
     // Buttons that require a long press (1 second):
     if(timePressed > 1000){
+      ButtonHandler.updatePressHandled();
       switch(buttonPressed){
         case camera_button:
-          radioTransmitBuffer[radioTransmitBufferPos] = reg_setDropDoor;
-          radioTransmitBuffer[radioTransmitBufferPos+1] = unlockDoorSignal; // There isn't currently any provision for returning the servo to the closed position, as this with the current setup is unnecessary.
-          radioTransmitBufferPos += 2;
-          ButtonHandler.updatePressHandled();
+          RadioDataManager.addData(reg_setDropDoor,unlockDoorSignal); // The servo is only closed again on reset
+          TelemetryManager.addData(reg_setDropDoor,unlockDoorSignal);
           break;
       }
     }
   }
-
-  // Print servo positions:
-  /*Serial.print("0,180,");
-  Serial.print(ailerons.pos);Serial.print(",");
-  Serial.print(elevator.pos);Serial.print(",");
-  Serial.print(rudder.pos);Serial.print(",");
-  Serial.print(throttle.pos);Serial.println();*/
+  
   // Receive data from PI
   
   // Transmit data to plane
+  byte* outDataBuffer; // Pointer which will point to the beginning of the telemetryBuffer array
+  int outDataLength = RadioDataManager.getData(outDataBuffer);
+  Radio.transmitData(outDataBuffer,outDataLength);
 
+  // Receive data from plane and pass straight to PI
+  static byte inDataBuffer[maxRadioMessageLength];
   
-  transmitToPlane(radioTransmitBuffer,radioTransmitBufferPos);
-  //Serial.println(ButtonHandler.getPressedTime());
+  int inDataLength = Radio.receiveData(inDataBuffer);
+  TelemetryManager.addDataArray(inDataBuffer,inDataLength);
   
-  // Receive data from plane
-  
-  // Feedback data to PI: (remember to include status data for UNO e.g. loops per second)
-  
-  
-
-}
-
-void transmitToPlane(char txdata[], int len){
-  LoRa.beginPacket();
-  for(int i=0;i<len;i++){
-    LoRa.print(txdata[i]);
+  // Feedback data to PI:
+  if(currentTime > nextTelemetryTime){
+    nextTelemetryTime = currentTime + 250; // 0.25 seconds from now
+    
+    TelemetryManager.addData(reg_setAilerons, ailerons.getPos());
+    TelemetryManager.addData(reg_setElevator, elevator.getPos());
+    TelemetryManager.addData(reg_setRudder,   rudder.getPos());
+    TelemetryManager.addData(reg_setThrottle, throttle.getPos());
+        
+    TelemetryManager.addData(reg_aileronTrimPos,ailerons.getTrimCentre());
+    TelemetryManager.addData(reg_elevatorTrimPos,elevator.getTrimCentre());
+    TelemetryManager.addData(reg_rudderTrimPos,rudder.getTrimCentre());
+    
+    TelemetryManager.addData(reg_groundLoopSpeed,constrain((1E3/avgLoopTime),0,255));
+    
+    
+    byte* outDataBuffer; // Will point to the beginning of the telemetryBuffer array
+    int outDataLength; // Will contain length of the data in the telemetryBuffer array
+    TelemetryManager.getData(outDataBuffer,outDataLength);
+    transmitToPI(outDataBuffer,outDataLength); // After this line, *outDataBuffer and outDataLength go out of scope.
   }
-  LoRa.endPacket();
+  
 }
 
+void transmitToPI(char txdata[], int len){
+  Serial.write(txdata,len);
+  Serial.print((char) 255); Serial.print((char) 255);
+  /*for(int i=0;i<len;i++){
+    Serial.print(txdata[i]);
+  }*/
+}

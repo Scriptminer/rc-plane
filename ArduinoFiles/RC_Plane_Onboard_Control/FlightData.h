@@ -6,9 +6,9 @@ class FLIGHT_DATA {
   public:
     RADIO* Radio; // The plane's onboard radio class
     SENSOR_MANAGER* SensorManager; // The plane's sensor manager
-    TELEMETRY_MANAGER* TelemetryManager; // The class which manages the telemetry buffer
+    DATA_MANAGER* TelemetryManager; // The class which manages the telemetry buffer
     
-    FLIGHT_DATA (RADIO* planeRadio, SENSOR_MANAGER* planeSensors, TELEMETRY_MANAGER* planeTelemetry) : Radio(planeRadio), SensorManager(planeSensors), TelemetryManager(planeTelemetry) {
+    FLIGHT_DATA (RADIO* planeRadio, SENSOR_MANAGER* planeSensors, DATA_MANAGER* planeTelemetry) : Radio(planeRadio), SensorManager(planeSensors), TelemetryManager(planeTelemetry) {
     }
 
     bool beginRadio(unsigned long frequency, int txPower){
@@ -16,9 +16,8 @@ class FLIGHT_DATA {
     }
     
     void updateFlightData(){
-      prevFlightTime = flightTime;
-      flightTime = micros();
-      unsigned long timeDif = flightTime-prevFlightTime;
+      unsigned long timeDif = millis() - flightTime;
+      flightTime = millis();
       avgLoopTime = (avgLoopTime + timeDif) / 2; // Take rolling average of loop times
     }
 
@@ -38,7 +37,7 @@ class FLIGHT_DATA {
 
     int updateControlState(unsigned long lastSignal){
       // May have more complex criterea in future - just now emergency mode engages after 2 seconds of no signal
-      if(flightTime-Radio->getLastSignal() > 2E6){ // If last signal was more than 2 seconds ago
+      if(flightTime-Radio->getLastSignal() > 2000){ // If last signal was more than 2 seconds ago
         controlState = 1; // Signal Loss: Emergency
       }else{
         controlState = 0; // Manual
@@ -47,8 +46,13 @@ class FLIGHT_DATA {
     }
 
     bool timeForTelemetry(unsigned long telemetryInterval){
-      if( (flightTime % telemetryInterval) < (prevFlightTime % telemetryInterval) ){ return true; }
-      else{ return false; }
+      if( flightTime > nextTelemetryTime ){
+        nextTelemetryTime = flightTime + 500; // 0.5s from now
+        return true;
+      }
+      else{
+        return false;
+      }
     }
 
     bool handleIncomingData(byte inBytes[], int inLength){
@@ -82,11 +86,11 @@ class FLIGHT_DATA {
           case reg_setDropDoor: // Drop Door Register //
             if(inValue == unlockDoorSignal){ // Unlock door
               doorPos = unlockedPos;
-              TelemetryManager->addTelemetry(reg_dropDoorState,inValue);
+              TelemetryManager->addData(reg_reportedDropDoorState,inValue);
             }
             if(inValue == lockDoorSignal){ // Lock door
               doorPos = lockedPos;
-              TelemetryManager->addTelemetry(reg_dropDoorState,inValue);
+              TelemetryManager->addData(reg_reportedDropDoorState,inValue);
             }
             break;
             
@@ -94,7 +98,7 @@ class FLIGHT_DATA {
             /*if(prevAutoMsg == inValue){ // If this message and the last to this register are identical
               controlState = (int) (inValue >> 6); // Set controlState to first 2 bits converted to int
             }else if(prevAutoMsg != 9001){ // Two messages received, both different
-              TelemetryManager.addTelemetry(groundregCONFLICT,B01000000);
+              TelemetryManager.addData(groundregCONFLICT,B01000000);
             }
             prevAutoMsg = inValue;*/
             //break; 
@@ -112,14 +116,13 @@ class FLIGHT_DATA {
     int getDoorPos     (){ return doorPos; }
     
     int getControlState(){ return controlState; }
-    int getLoopsPerSecond(){ return (1E6 / avgLoopTime); }
+    int getLoopsPerSecond(){ return (1E3 / avgLoopTime); }
     
   private:
     
-    unsigned long avgLoopTime = 0;
-    unsigned long flightTime = 0; // Micros since program start
-    unsigned long prevFlightTime = 0; // Uptime of this program
-    unsigned long lastTelemetryBroadcast = 0;
+    unsigned long avgLoopTime = 0; // Average number of milliseconds each loop takes
+    unsigned long flightTime = 0; // Millis since program start
+    unsigned long nextTelemetryTime = 0; // Time at which the next telemetry packet should be sent
     
     int corruptedMessages = 0; // Number of invalid messages received since last telemetry broadcast
     int controlState = 0; // 0 = Manual, 1 = Emergency Safety (on radio loss), 2 = Waypoints??, 3 = Full Autopilot??

@@ -1,6 +1,16 @@
 # Generate CommonConstants.h and CommonConstants.py to share registers between Pi and onboard Arduino
+# Also copy the master Radio.h and TelemetryManager.h into the arduino file folders.
 
 import os
+
+##
+os.system("cp ArduinoFiles/Radio.h ArduinoFiles/RC_Full_Ground_Control/Radio.h")
+os.system("cp ArduinoFiles/Radio.h ArduinoFiles/RC_Plane_Onboard_Control/Radio.h")
+os.system("cp ArduinoFiles/DataManager.h ArduinoFiles/RC_Full_Ground_Control/DataManager.h")
+os.system("cp ArduinoFiles/DataManager.h ArduinoFiles/RC_Plane_Onboard_Control/DataManager.h")
+
+
+##
 
 hFile = "ArduinoFiles/RC_Plane_Onboard_Control/CommonConstants.h"
 pyFile = "GroundControl/CommonConstants.py"
@@ -19,9 +29,9 @@ registers = [
     (64,"currentRoll"),
     (65,"currentPitch"),
     (66,"currentYaw"),
-    (67,"dropDoorState"),
+    (67,"reportedDropDoorState"),
     (68,"onboardLoopSpeed","Calculated execution loops per second"),
-    (69,"currentControlState"),
+    (69,"reportedControlState"),
     (70,"onboardRSSI","Received signal strength (as a positive value, not negative)"),
     (71,"currentBattVoltage","Voltage of battery (raw reading - processing to occur on PI)"),
     (72,"onboardCorruptedMessages"),
@@ -30,6 +40,10 @@ registers = [
     # Ground Arduino to PI registers:
     (128,"groundLoopSpeed"),
     (129,"groundRSSI"),
+    (130,"groundRadioStarted","2 for success, 1 for failure"),
+    (131,"aileronTrimPos"),
+    (132,"elevatorTrimPos"),
+    (133,"rudderTrimPos"),
 ]
 
 registersPrefix = "reg_"

@@ -16,41 +16,35 @@ class Radio:
             timeout = 0.05,
         )
         
-        self.eol = chr(0)
-        self.charOffset = 1 # Adds one to each value
-        
         self.radioBuffer = [] # Buffer for data to be sent to the plane (accessed by other classes)
     
-    def sendData(self, dataToSend):
-        ''' Sends control data to the UNO '''
-        #dataToSend = joystick.values() + self.radioBuffer # + whatever other things need to be added
-        message = bytes( [x+self.charOffset for x in dataToSend] + [ord(self.eol)]) # Adds charOffset to each character in list, and adds eol
+    # sendData() Not currently in use:
+    #def sendData(self, dataToSend):
+    #    ''' Sends control data to the UNO '''
+    #    #dataToSend = joystick.values() + self.radioBuffer # + whatever other things need to be added
+    #    message = bytes(dataToSend) # Adds charOffset to each character in list, and adds eol
         
-        self.ser.write(message)
+    #    self.ser.write(message)
+    inMessage = []
     
     def readData(self):
-        inMessage = self.myReadline()
-        output = [byte-self.charOffset for byte in inMessage] # Takes away the charOffset
-        return output
-        '''if self.ser.inWaiting(): # Aborts read if there are no messages
-            inMessage = self.myReadline()
-            output = [byte-self.charOffset for byte in inMessage] # Takes away the charOffset
-            return output
-        else:
-            print("nothing worthwhile....")
-            return []'''
-    
-    def myReadline(self): # Custom EOL readline function from goo.gl/U6REhB
-        eol = self.eol
-        line = bytearray()
-        while True:
-            c = self.ser.read(1)
-            if c:
-                if ord(c) == ord(eol): # Ord so that the characters are in the same format
-                    break
-                else:
-                    line += c   
-            else:
-                break
+        char = None
+        prevChar = None
+        while self.ser.in_waiting: # Loop until two consecutive 255s
+            prevChar = char
+            char = self.ser.read()
+            self.inMessage.append(char)
+            
+            if char == prevChar and ord(char) == 255:
+                msg = self.inMessage[:-2] # Don't return the 255s (255s serve as EOL)
+                
+                print("Msg:")
+                print(self.inMessage)
+                self.inMessage = []
+                return msg
         
-        return bytes(line)
+        return []
+        
+        
+        
+

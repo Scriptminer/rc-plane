@@ -1,4 +1,5 @@
 from chatConnection import ChatConnection
+from CommonConstants import registers
 from copy import deepcopy
 
 class ManageData():
@@ -38,89 +39,98 @@ class ManageData():
     
     warningsToSend = [] # Example entry {"element":"autopilotMode","toggle":True}
     
-    def __init__(self,joystick):
-        self.joystick = joystick
+    def __init__(self):
         surfaces = [["ailerons","°"],["elevator","°"],["rudder","°"],["throttle","%"]]
         for surface in surfaces:
             self.dataTable[surface[0]+"Input"] = {"symbol":surface[1],"value":"---"}
             self.dataTable[surface[0]+"Trim"] = {"symbol":surface[1],"value":"---"}
-            self.dataTable[surface[0]+"Range"] = {"symbol":surface[1],"value":"---"}
+            #self.dataTable[surface[0]+"Range"] = {"symbol":surface[1],"value":"---"}
     
-    def handleUpData(self,data):
+    # handleUpData() not currently in use
+    """def handleUpData(self,data):
         ''' Handle data inputed by a device '''
         if self.dataTable[data]["type"] == "LED":
             self.dataTable[data]["value"] = self.dataTable[data]["value"] # Inverts the value of the register
         
         radio.radioBuffer.extend(()) # Will ultimately send data to the UNO to change LEDS onboard
     
-        return joystick.prevValues
+        return joystick.prevValues"""
     
     
     def handleDownData(self,data):
         ''' Handles data received from UNO '''
-        # Arduino down registers:
-        '''int groundregPING = 1;
-           int groundregROLL = 2;
-           int groundregPITCH = 3;
-           int groundregYAW = 4;
-           int groundregDROP = 5; // Returns drop door state
-           int groundregLOOP = 6; // Loop time register (avg loop)
-           int groundregAUTOMODE = 7; // Autopilot state
-           int groundregCONFLICT = 8; // Conflicting incoming signal warning. #bit1 Drop door, #bit2 control state toggle, #bit3 out of range int submitted
-        '''
+
         if len(data) % 2 != 0:
             ChatConnection.send_all_msg("String of incorrect length recieved from UNO")
             print("String of incorrect length recieved from UNO, of length: ")
             print(len(data))
             return
-        
+                
         for i in range(0,len(data),2):
-            reg = data[i]
-            val = data[i+1]
-            if reg == 1: # Ping
-                ''' Nothing as of yet '''
-            
-            elif reg == 2: # Roll
+            reg = ord(data[i])
+            val = ord(data[i+1])
+            print("REG IS {0}, VAL IS {1}".format(reg,val))
+            # Ground to Air registers (copy of data sent to plane):
+            if reg == registers["setAilerons"]:
+                self.dataTable["aileronsInput"]["value"] = val 
+                
+            elif reg == registers["setElevator"]:
+                self.dataTable["elevatorInput"]["value"]  = val
+                
+            elif reg == registers["setRudder"]:
+                self.dataTable["rudderInput"]["value"]  = val
+                
+            elif reg == registers["setThrottle"]:
+                self.dataTable["throttleInput"]["value"]  = round(val/1.795)
+                
+            elif reg == registers["setDropDoor"]:
+                if val == unlockDoorSignal:
+                    ChatConnection.send_all_msg("Sending unlock drop door signal.")
+                elif val == lockDoorSignal:
+                    ChatConnection.send_all_msg("Sending lock drop door signal.")
+                
+            # Plane to ground registers:
+            if reg == registers["currentRoll"]:
                 self.dataTable["roll"]["value"] = val
             
-            elif reg == 3: # Pitch
+            elif reg == registers["currentPitch"]:
                 self.dataTable["pitch"]["value"] = val
             
-            elif reg == 4: # Yaw
+            elif reg == registers["currentYaw"]:
                 self.dataTable["yaw"]["value"] = val
             
-            elif reg == 5: # Drop
+            elif reg == registers["reportedDropDoorState"]:
                 if val == 100:
                     self.dataTable["locked"]["value"] = " Unlocked" # Servo position
                     self.dataTable["door"]["value"] = " Open" # Once the door is open, it does not propperly shut
                 elif val == 200:
                     self.dataTable["locked"]["value"] = " Locked" # Servo position
             
-            elif reg == 6: # Loop
-                if val == 254:
-                    self.dataTable["nanoLoopSpeed"]["value"] = ">2540"
+            elif reg == registers["onboardLoopSpeed"]:
+                if val == 255:
+                    self.dataTable["nanoLoopSpeed"]["value"] = ">=255"
                 else:
-                    self.dataTable["nanoLoopSpeed"]["value"] = val*10
+                    self.dataTable["nanoLoopSpeed"]["value"] = val
                 
-                if val*10 < 10:
+                if val < 10:
                     self.warningsToSend.append({"element":"nanoLoopSpeed","toggle":True})
                 else:
                     self.warningsToSend.append({"element":"nanoLoopSpeed","toggle":False})
             
-            elif reg == 7: # Autopilot mode
-                if val == 240: # First 4 bits high, emergency mode
+            elif reg == registers["reportedControlState"]:
+                if val == 1: # Emergency mode
                     if self.dataTable["autopilotMode"]["value"] != "NoSig": # Only sends a message if mode has changed
                         ChatConnection.send_all_msg("EMERGENCY MODE ENGAGED!")
                     self.dataTable["autopilotMode"]["value"] = "NoSig"
                     self.warningsToSend.append({"element":"autopilotMode","toggle":True})
                     
-                elif val == 15: # Second 4 bits high, normal mode
+                elif val == 0: # Manual / Normal mode
                     if self.dataTable["autopilotMode"]["value"] != "Manual": # Only sends a message if mode has changed
                         ChatConnection.send_all_msg("MANUAL FLIGHT ENGAGED (breathe a sigh of relief!)")
                     self.dataTable["autopilotMode"]["value"] = "Manual"
                     self.warningsToSend.append({"element":"autopilotMode","toggle":False})
             
-            elif reg == 8: # Conflict
+            elif reg == registers["onboardError"]:
                 if val == 128:
                     ChatConnection.send_all_msg("Inconsistant command to change drop door positions received by plane.")
                 elif val == 64:
@@ -131,56 +141,33 @@ class ManageData():
                     ChatConnection.send_all_msg("Function on nano attempted to send out of range int to ground.")
                 elif val == 8:
                     ChatConnection.send_all_msg("Nano received message of incorrect length.")
+                    
+            elif reg == registers["currentBattVoltage"]:
+                self.dataTable["voltage"]["value"] = val
             
-            elif reg == 9: # Testing
-                print("Signal to reg 9 is")
-                print(val)
-            
-            # From UNO Registers
-            elif reg == 128: # UNO loop speed
+            # Ground to PI Registers
+            elif reg == registers["groundLoopSpeed"]:
                 self.dataTable["unoLoopSpeed"]["value"] = val
                 if val < 10:
                     self.warningsToSend.append({"element":"unoLoopSpeed","toggle":True})
                 else:
                     self.warningsToSend.append({"element":"unoLoopSpeed","toggle":False})
             
-            elif reg == 129: # Radio begin
+            elif reg == registers["groundRadioStarted"]:
                 if val == 100:
-                    ChatConnection.send_all_msg("Radio succesfully started!")
+                    ChatConnection.send_all_msg("Ground radio succesfully started!")
                 if val == 200:
-                    ChatConnection.send_all_msg("Radio failed to start - reset arduino.")
-    
-    def handleJoystickData(self):
-        """ Takes data from joystick """
-        # Trim
-        controlRanges = deepcopy(self.joystick.controlRanges)
-        for i in controlRanges[2]:
-            if i != "typ":
-                controlRanges[2][i] = round(controlRanges[2][i]/1.795)
-        
-        for i in controlRanges:
-            trim = self.dataTable[i["typ"]+"Trim"]
-            ctrlRange = self.dataTable[i["typ"]+"Range"]
+                    ChatConnection.send_all_msg("Ground radio failed to start - reset arduino.")
             
-            trim["value"] = str(i["centre"])
-            ctrlRange["value"] = str(i["min"]) + ctrlRange["symbol"] + "-" + str(i["max"]) # Symbol is added on send
-        
-        # Inputs
-        data = self.joystick.prevValues
-        for x in range(0,len(data),2):
-            reg = data[x]
-            val = data[x+1]
-            if reg == 1: # Ailerons
-                self.dataTable["aileronsInput"]["value"] = val 
-            elif reg == 2: # Elevator
-                self.dataTable["elevatorInput"]["value"]  = val
-            elif reg == 3: # Rudder
-                self.dataTable["rudderInput"]["value"]  = val
-            elif reg == 4: # Throttle
-                self.dataTable["throttleInput"]["value"]  = round(val/1.795)
-            elif reg == 5: # Drop Door
-                pass
-                # Only displayed when recieving from plane
+            elif reg == registers["aileronTrimPos"]:
+                self.dataTable["aileronsTrim"]["value"] = val
+            
+            elif reg == registers["elevatorTrimPos"]:
+                self.dataTable["elevatorTrim"]["value"] = val
+            
+            elif reg == registers["rudderTrimPos"]:
+                self.dataTable["rudderTrim"]["value"] = val
+                
     
     def handlePiLoopData(self,avgLoopTime,currentTime):
         self.dataTable["piLoopSpeed"]["value"] = round(1/avgLoopTime)
@@ -192,9 +179,7 @@ class ManageData():
             self.warningsToSend.append({"element":"piLoopSpeed","toggle":False})
     
     def sendData(self):
-        # Handles extra data
-        
-        self.handleJoystickData()
+        """ Sends all recorded data to ChatConnection to put on webpage """
                 
         # Sends Data
         dataToSend = {}

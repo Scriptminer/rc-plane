@@ -9,15 +9,19 @@
 #define reg_currentRoll 64
 #define reg_currentPitch 65
 #define reg_currentYaw 66
-#define reg_dropDoorState 67
+#define reg_reportedDropDoorState 67
 #define reg_onboardLoopSpeed 68 // Calculated execution loops per second
-#define reg_currentControlState 69
+#define reg_reportedControlState 69
 #define reg_onboardRSSI 70 // Received signal strength (as a positive value, not negative)
 #define reg_currentBattVoltage 71 // Voltage of battery (raw reading - processing to occur on PI)
 #define reg_onboardCorruptedMessages 72
 #define reg_onboardError 73 // 
 #define reg_groundLoopSpeed 128
 #define reg_groundRSSI 129
+#define reg_groundRadioStarted 130 // 2 for success, 1 for failure
+#define reg_aileronTrimPos 131
+#define reg_elevatorTrimPos 132
+#define reg_rudderTrimPos 133
 
 const int batteryVoltageReadingOffset = 600; // Provisional number!!
 const int maxRadioMessageLength = 32; // Bytes

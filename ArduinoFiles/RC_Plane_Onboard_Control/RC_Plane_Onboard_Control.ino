@@ -4,10 +4,6 @@
 #include <MPU6050.h>
 #include <MPU6050_6Axis_MotionApps20.h>*/
 
-/*#include <SX1278.h> oldLora
-#include <REMOTEC.h>
-#include <AES.h>
-#include <LORA.h>*/
 // newLora
 #include <SPI.h>
 #include <LoRa.h>
@@ -21,7 +17,7 @@
 #include "Radio.h"
 #include "CommonConstants.h"
 #include "Sensors.h"
-#include "TelemetryManager.h"
+#include "DataManager.h"
 #include "FlightData.h"
 
 Servo aileron;
@@ -33,19 +29,19 @@ Servo door;
 
 /*RADIO __tmpRadio();
 SENSOR_MANAGER __tmpSensorManager();
-TELEMETRY_MANAGER __tmpTelemetryManager(new byte[64], 64);
+DATA_MANAGER __tmpTelemetryManager(new byte[64], 64);
 */
 
 FLIGHT_DATA ThisFlight(new RADIO(maxRadioMessageLength),
                        new SENSOR_MANAGER(),
-                       new TELEMETRY_MANAGER(new byte[maxRadioMessageLength], maxRadioMessageLength)
+                       new DATA_MANAGER(new byte[maxRadioMessageLength], maxRadioMessageLength)
                       );
 
 #define controlStateLED 19 // Blue LED under aircraft to signal control state (as of now - nothing for manual, solid for emergency)
 #define oneWireBus 9
 
-const long flashSpeed = 5E5; // 0.5s
-const long telemetryInterval = 5E5; // 0.5s - how often non-requested telemetry is sent to ground
+const long flashSpeed = 500; // 0.5s
+const long telemetryInterval = 500; // 0.5s - how often non-requested telemetry is sent to ground
 
 ////////// SENSOR SETUP //////////
 
@@ -80,10 +76,10 @@ void setup(){
 int loops = 0; // Keeps track of how many loops have passed
 
 void loop(){
-  static byte inDataBuffer[maxRadioMessageLength];
   // Receive Incoming Data
-  
-  int inDataLength = ThisFlight.Radio->receiveData(inDataBuffer);
+  static byte inDataBuffer[maxRadioMessageLength];
+  int inDataLength;
+  ThisFlight.Radio->receiveData(inDataBuffer,inDataLength);
   if(!ThisFlight.handleIncomingData(inDataBuffer, inDataLength)){
     // Error parsing data:
     ThisFlight.incrementCorruptedMessages();
@@ -112,22 +108,23 @@ void loop(){
   
   if(ThisFlight.timeForTelemetry(telemetryInterval)){ // If it is time to send telemetry
     int loopsPerSecond = constrain( ThisFlight.getLoopsPerSecond(), 0, 255 );
-    ThisFlight.TelemetryManager->addTelemetry(reg_onboardLoopSpeed,loopsPerSecond);
+    ThisFlight.TelemetryManager->addData(reg_onboardLoopSpeed,loopsPerSecond);
     
-    ThisFlight.TelemetryManager->addTelemetry(reg_onboardRSSI,ThisFlight.Radio->getAvgRSSI()); // Received signal strength
+    ThisFlight.TelemetryManager->addData(reg_onboardRSSI,ThisFlight.Radio->getAvgRSSI()); // Received signal strength
 
-    ThisFlight.TelemetryManager->addTelemetry(reg_currentControlState,ThisFlight.getControlState()); // Control Status (normal or "autopilot")
+    ThisFlight.TelemetryManager->addData(reg_reportedControlState,ThisFlight.getControlState()); // Control Status (normal or "autopilot")
 
     // Add telemetry for number of corrupted messages
     // Sensors:
-    ThisFlight.TelemetryManager->addTelemetry(reg_currentBattVoltage,ThisFlight.SensorManager->getBatteryVoltage());
+    ThisFlight.TelemetryManager->addData(reg_currentBattVoltage,ThisFlight.SensorManager->getBatteryVoltage());
     /*sensors.requestTemperatures();
     sensors.getTempCByIndex(0);*/
     
     // Send all telemetry data
-    byte* outDataBuffer;
-    int outDataLength = ThisFlight.TelemetryManager->getTelemetry(outDataBuffer);
-    //ThisFlight.Radio->transmitData(outDataBuffer, outDataLength);
+    byte* outDataBuffer; // Will point to the beginning of the telemetryBuffer array
+    int outDataLength; // Will contain length of the data in the telemetryBuffer array
+    ThisFlight.TelemetryManager->getData(outDataBuffer,outDataLength);
+    ThisFlight.Radio->transmitData(outDataBuffer, outDataLength); // After this line, *outDataBuffer and outDataLength go out of scope.
     
   }
 }
