@@ -25,7 +25,7 @@ class SENSOR_MANAGER {
     }
 
     void updateReadings(){
-      avgBatteryVoltageReading = ( (avgBatteryVoltageReading*(8-1)) + analogRead(A7)) / 8; // Rolling average of reading
+      avgBatteryVoltageReading = ( (avgBatteryVoltageReading*(8-1)) + analogRead(A6)) / 8; // Rolling average of reading
     }
     
     int getBatteryVoltage(){

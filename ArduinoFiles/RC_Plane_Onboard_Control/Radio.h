@@ -14,26 +14,26 @@ class RADIO {
       }
     }
     
-    void receiveData(byte inDataBuffer[],int inDataLength){
+    void receiveData(char inDataBuffer[],int* inDataLength){
       // Write any incoming messages to inDataBuffer, and return the length of the message
       
       int packetSize = LoRa.parsePacket();
       
       if(packetSize > 0 && packetSize <= maxRadioMsg){
-        lastSignal = micros();
+        lastSignal = millis();
         int i = 0;
         while (LoRa.available() && i <= maxRadioMsg) {
-          byte inByte = LoRa.read();
+          char inByte = LoRa.read();
           inDataBuffer[i] = inByte;
           i++;
         }
-        inDataLength = i;
+        *inDataLength = i;
         int avgRSSI = (abs(LoRa.packetRssi())+avgRSSI) / 2; // Rolling average
         
       }
     }
 
-    void transmitData(byte txData[], int len){
+    void transmitData(char txData[], int len){
       LoRa.beginPacket();
       for(int i=0;i<len;i++){
         LoRa.print(txData[i]);
@@ -50,6 +50,8 @@ class RADIO {
     unsigned long lastSignal; // Time of last signal
 };
 
+/*
+// Currently Broken
 class SERIAL_IMITATION_RADIO {
   public:
     SERIAL_IMITATION_RADIO (int max_radio_msg) : maxRadioMsg(max_radio_msg) {
@@ -67,7 +69,7 @@ class SERIAL_IMITATION_RADIO {
       int packetSize = Serial.available();
       
       if(packetSize > 0){
-        lastSignal = micros();
+        lastSignal = millis();
         int i = 0;
         while (Serial.available() && i <= maxRadioMsg) {
           byte inByte = Serial.parseInt();
@@ -97,5 +99,5 @@ class SERIAL_IMITATION_RADIO {
     int avgRSSI;
     unsigned long lastSignal; // Time of last signal
 };
-
+*/
 

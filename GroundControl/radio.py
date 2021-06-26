@@ -13,7 +13,7 @@ class Radio:
             stopbits = serial.STOPBITS_ONE,
             bytesize = serial.EIGHTBITS,
             writeTimeout = 1,
-            timeout = 0.05,
+            timeout = 0.01,
         )
         
         self.radioBuffer = [] # Buffer for data to be sent to the plane (accessed by other classes)
@@ -26,23 +26,29 @@ class Radio:
         
     #    self.ser.write(message)
     inMessage = []
+    bytesRead = 0
+    inMessageLength = 0
     
     def readData(self):
-        char = None
-        prevChar = None
-        while self.ser.in_waiting: # Loop until two consecutive 255s
-            prevChar = char
-            char = self.ser.read()
-            self.inMessage.append(char)
+        while self.ser.in_waiting:
+            if self.inMessageLength == 0:
+                self.inMessageLength = ord(self.ser.read()) # First byte specifies length of message
+                print("Expecting message of length {}".format(self.inMessageLength))
             
-            if char == prevChar and ord(char) == 255:
-                msg = self.inMessage[:-2] # Don't return the 255s (255s serve as EOL)
-                
-                print("Msg:")
-                print(self.inMessage)
-                self.inMessage = []
-                return msg
+            else: # Reading through message...
+                if self.bytesRead < self.inMessageLength:
+                    self.inMessage.append(self.ser.read())
+                    self.bytesRead += 1
         
+        if self.bytesRead == self.inMessageLength:
+            print("InMessage:")
+            print(self.inMessage)
+            msg = self.inMessage
+            self.inMessage = []
+            self.inMessageLength = 0
+            self.bytesRead = 0
+            return msg
+            
         return []
         
         

@@ -57,8 +57,8 @@ void setup(){
   
   // Attach Servos
   motor.attach(2,1000,2000); // ESC wire
-  aileron.attach(2); // Brown wire
-  door.attach(3); // Red wire
+  aileron.attach(3); // Brown wire
+  door.attach(4); // Red wire
   rudder.attach(5); // Orange wire
   elevator.attach(6); // Red wire
   
@@ -79,7 +79,7 @@ void loop(){
   // Receive Incoming Data
   static byte inDataBuffer[maxRadioMessageLength];
   int inDataLength;
-  ThisFlight.Radio->receiveData(inDataBuffer,inDataLength);
+  ThisFlight.Radio->receiveData(inDataBuffer,&inDataLength);
   if(!ThisFlight.handleIncomingData(inDataBuffer, inDataLength)){
     // Error parsing data:
     ThisFlight.incrementCorruptedMessages();
@@ -87,7 +87,6 @@ void loop(){
 
   
   // Handles emergency mode
-
   ThisFlight.updateFlightData();
   
   if(ThisFlight.updateControlState( ThisFlight.Radio->getLastSignal() ) == 1){ // 1 = emergency mode
@@ -105,7 +104,6 @@ void loop(){
   motor.write(ThisFlight.getThrottlePos());
 
   // Handles Telemetry
-  
   if(ThisFlight.timeForTelemetry(telemetryInterval)){ // If it is time to send telemetry
     int loopsPerSecond = constrain( ThisFlight.getLoopsPerSecond(), 0, 255 );
     ThisFlight.TelemetryManager->addData(reg_onboardLoopSpeed,loopsPerSecond);
@@ -121,9 +119,9 @@ void loop(){
     sensors.getTempCByIndex(0);*/
     
     // Send all telemetry data
-    byte* outDataBuffer; // Will point to the beginning of the telemetryBuffer array
+    char* outDataBuffer; // Will point to the beginning of the telemetryBuffer array
     int outDataLength; // Will contain length of the data in the telemetryBuffer array
-    ThisFlight.TelemetryManager->getData(outDataBuffer,outDataLength);
+    ThisFlight.TelemetryManager->getData(&outDataBuffer,&outDataLength);
     ThisFlight.Radio->transmitData(outDataBuffer, outDataLength); // After this line, *outDataBuffer and outDataLength go out of scope.
     
   }

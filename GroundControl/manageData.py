@@ -61,9 +61,11 @@ class ManageData():
         ''' Handles data received from UNO '''
 
         if len(data) % 2 != 0:
-            ChatConnection.send_all_msg("String of incorrect length recieved from UNO")
-            print("String of incorrect length recieved from UNO, of length: ")
-            print(len(data))
+            msg = "String of incorrect length recieved from UNO: "
+            for i in range(0,len(data)):
+                msg += str(ord(data[i]))+","
+            ChatConnection.send_all_msg(msg)
+            print(msg)
             return
                 
         for i in range(0,len(data),2):
@@ -84,9 +86,9 @@ class ManageData():
                 self.dataTable["throttleInput"]["value"]  = round(val/1.795)
                 
             elif reg == registers["setDropDoor"]:
-                if val == unlockDoorSignal:
+                if val == commonConstants["unlockDoorSignal"]:
                     ChatConnection.send_all_msg("Sending unlock drop door signal.")
-                elif val == lockDoorSignal:
+                elif val == commonConstants["lockDoorSignal"]:
                     ChatConnection.send_all_msg("Sending lock drop door signal.")
                 
             # Plane to ground registers:
@@ -147,8 +149,8 @@ class ManageData():
             
             # Ground to PI Registers
             elif reg == registers["groundLoopSpeed"]:
-                self.dataTable["unoLoopSpeed"]["value"] = val
-                if val < 10:
+                self.dataTable["unoLoopSpeed"]["value"] = round(1000/val,1)
+                if val > 100: # 100ms per loop
                     self.warningsToSend.append({"element":"unoLoopSpeed","toggle":True})
                 else:
                     self.warningsToSend.append({"element":"unoLoopSpeed","toggle":False})

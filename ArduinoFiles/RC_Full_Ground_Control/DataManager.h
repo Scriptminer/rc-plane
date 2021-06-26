@@ -1,10 +1,10 @@
 
 class DATA_MANAGER {
   public:
-    DATA_MANAGER (byte *data_buffer, int data_buffer_length) : dataBuffer(data_buffer), dataBufferLength(data_buffer_length) {
+    DATA_MANAGER (char *data_buffer, int data_buffer_length) : dataBuffer(data_buffer), dataBufferLength(data_buffer_length) {
     }
     
-    void addData(byte reg,byte val){
+    void addData(char reg,char val){
       dataBufferPos %= dataBufferLength; // Ensures dataBufferPos is never beyond the end of the buffer
       dataBuffer[dataBufferPos] = reg;
       dataBuffer[dataBufferPos+1] = val;
@@ -12,10 +12,10 @@ class DATA_MANAGER {
     }
     
     void addData(int reg,int val){
-      addData((byte) reg, (byte) constrain(val,0,255));
+      addData((char) reg, (char) constrain(val,0,255));
     }
     
-    void addDataArray(byte data[],int dataLength){
+    void addDataArray(char data[],int dataLength){
       if(dataLength%2 != 0){ // Array must be even in length
         return;
       }
@@ -24,16 +24,16 @@ class DATA_MANAGER {
       }
     }
 
-    void getData(byte dataOut[],int len){
+    void getData(char** dataOut,int* len){
       // Sets dataOut to point to the beginning of the data buffer, and len to point to the end of the data contained within it
-      dataOut = dataBuffer;
-      len = dataBufferPos;
+      *dataOut = dataBuffer;
+      *len = dataBufferPos;
       dataBufferPos = 0; // Reset data buffer position
     }
   
   private:
     const int dataBufferLength;
-    byte *dataBuffer; // Defines the buffer for any outgoing data
-    byte dataBufferPos = 0;
+    char *dataBuffer; // Defines the buffer for any outgoing data
+    char dataBufferPos = 0;
 };
 

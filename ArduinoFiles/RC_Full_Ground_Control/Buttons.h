@@ -8,28 +8,28 @@
 
 // analogRead LOW and analogRead HIGH:
 #define potLOW 0 // Minimum potentiometer reading is 0.0V
-#define potHIGH 1023 // Maximum potentiometer analogRead value (analogReference is tied to the 3.3V supply which supplies the potentiometers)
+#define potHIGH 1023 // Maximum potentiometer analogRead value (analogReference is tied to the 5.0V supply which supplies the potentiometers)
 
-// Button analogRead values (assuming 3.3V is supplied):
-#define no_button 1023
+// Button analogRead values (assuming 5.0V is supplied):
+#define no_button 1022
 
-#define centre_button 530 // Reset elevator/aileron trim
-#define left_arrow 463 // Trim ailerons left
-#define right_arrow 606 // Trim ailerons right
-#define up_arrow 691 // Trim elevator up
-#define down_arrow 406 // Trime elevator down
+#define centre_button 515 // Reset elevator/aileron trim
+#define left_arrow 449 // Trim ailerons left
+#define right_arrow 590 // Trim ailerons right
+#define up_arrow 674 // Trim elevator up
+#define down_arrow 392 // Trime elevator down
 
-#define left_skip 88 // Trim rudder left
-#define right_skip 221 // Trim rudder right
-#define camera_button 338
-#define video_button 284
-#define star_button 146 // Reset rudder trim
+#define left_skip 79 // Trim rudder left
+#define right_skip 209 // Trim rudder right
+#define camera_button 325 // Trigger drop door open
+#define video_button 272
+#define star_button 136 // Reset rudder trim
 
-#define left_button 22
-#define right_button 760
+#define left_button 14
+#define right_button 742
 
 #define numButtons 13 // Number of different buttons in buttons[], inclusive of unpressed state
-#define tolerance 15 // How close reading must be to actual button value
+#define tolerance 5 // How close reading must be to actual button value
 
 class BUTTON_HANDLER {
   public:
@@ -48,7 +48,7 @@ class BUTTON_HANDLER {
           return buttonPosition; // Button found, no need to continue
         }
       }
-    
+      
       return no_button; // If no button found, return a no_button
     }
 
@@ -57,8 +57,8 @@ class BUTTON_HANDLER {
       return (millis() - lastPressTime);
     }
 
-    void updatePressHandled() {
-      thisPressHandled = true;
+    void updatePressHandled(bool isHandled) {
+      thisPressHandled = isHandled;
     }
 
     bool pressHandled() {
