@@ -32,7 +32,7 @@ SENSOR_MANAGER __tmpSensorManager();
 DATA_MANAGER __tmpTelemetryManager(new byte[64], 64);
 */
 
-FLIGHT_DATA ThisFlight(new RADIO(maxRadioMessageLength),
+FLIGHT_DATA ThisFlight(new RADIO(maxRadioMessageLength,groundToAirFrequency,airToGroundFrequency,2), // rxFrequency, txFrequency, txPower in dBm (2dBm = 1.5849mW, 10dBm = 10mW, 20dBm = 100mW)
                        new SENSOR_MANAGER(),
                        new DATA_MANAGER(new byte[maxRadioMessageLength], maxRadioMessageLength)
                       );
@@ -41,7 +41,6 @@ FLIGHT_DATA ThisFlight(new RADIO(maxRadioMessageLength),
 #define oneWireBus 9
 
 const long flashSpeed = 500; // 0.5s
-const long telemetryInterval = 500; // 0.5s - how often non-requested telemetry is sent to ground
 
 ////////// SENSOR SETUP //////////
 
@@ -52,7 +51,6 @@ DallasTemperature sensors(&oneWire);*/
 
 void setup(){
   Serial.begin(38400);
-
   pinMode(controlStateLED,OUTPUT); // Pin 8 - blue wire
   
   // Attach Servos
@@ -63,7 +61,7 @@ void setup(){
   elevator.attach(6); // Red wire
   
   // LoRa Setup:
-  if(!ThisFlight.beginRadio(433E6,2)){ // Frequency, txPower in dBm (2dBm = 1.5849mW, 10dBm = 10mW, 20dBm = 100mW)
+  if(!ThisFlight.beginRadio()){
     digitalWrite(controlStateLED,HIGH);
     while (true); // Stops the program
   }
@@ -78,14 +76,14 @@ int loops = 0; // Keeps track of how many loops have passed
 void loop(){
   // Receive Incoming Data
   static byte inDataBuffer[maxRadioMessageLength];
-  int inDataLength;
+  int inDataLength = 0;
   ThisFlight.Radio->receiveData(inDataBuffer,&inDataLength);
+  
   if(!ThisFlight.handleIncomingData(inDataBuffer, inDataLength)){
     // Error parsing data:
     ThisFlight.incrementCorruptedMessages();
   }
 
-  
   // Handles emergency mode
   ThisFlight.updateFlightData();
   
@@ -102,27 +100,7 @@ void loop(){
   rudder.write(ThisFlight.getRudderPos());
   door.write(ThisFlight.getDoorPos());
   motor.write(ThisFlight.getThrottlePos());
-
-  // Handles Telemetry
-  if(ThisFlight.timeForTelemetry(telemetryInterval)){ // If it is time to send telemetry
-    int loopsPerSecond = constrain( ThisFlight.getLoopsPerSecond(), 0, 255 );
-    ThisFlight.TelemetryManager->addData(reg_onboardLoopSpeed,loopsPerSecond);
-    
-    ThisFlight.TelemetryManager->addData(reg_onboardRSSI,ThisFlight.Radio->getAvgRSSI()); // Received signal strength
-
-    ThisFlight.TelemetryManager->addData(reg_reportedControlState,ThisFlight.getControlState()); // Control Status (normal or "autopilot")
-
-    // Add telemetry for number of corrupted messages
-    // Sensors:
-    ThisFlight.TelemetryManager->addData(reg_currentBattVoltage,ThisFlight.SensorManager->getBatteryVoltage());
-    /*sensors.requestTemperatures();
-    sensors.getTempCByIndex(0);*/
-    
-    // Send all telemetry data
-    char* outDataBuffer; // Will point to the beginning of the telemetryBuffer array
-    int outDataLength; // Will contain length of the data in the telemetryBuffer array
-    ThisFlight.TelemetryManager->getData(&outDataBuffer,&outDataLength);
-    ThisFlight.Radio->transmitData(outDataBuffer, outDataLength); // After this line, *outDataBuffer and outDataLength go out of scope.
-    
-  }
+  
+  // Update sensor readings (telemetry is sent only on request)
+  ThisFlight.updateSensorReadings();
 }

@@ -1,6 +1,6 @@
 
-#define lockedPos 90;
-#define unlockedPos 5;
+#define lockedPos 70;
+#define unlockedPos 150;
 
 class FLIGHT_DATA {
   public:
@@ -11,14 +11,16 @@ class FLIGHT_DATA {
     FLIGHT_DATA (RADIO* planeRadio, SENSOR_MANAGER* planeSensors, DATA_MANAGER* planeTelemetry) : Radio(planeRadio), SensorManager(planeSensors), TelemetryManager(planeTelemetry) {
     }
 
-    bool beginRadio(unsigned long frequency, int txPower){
-      return Radio->begin(frequency,txPower);
+    bool beginRadio(){
+      return Radio->begin();
     }
     
     void updateFlightData(){
-      unsigned long timeDif = millis() - flightTime;
+      loopsSinceTelemetry++;
       flightTime = millis();
+      /*unsigned long timeDif = millis() - flightTime;
       avgLoopTime = (avgLoopTime + timeDif) / 2; // Take rolling average of loop times
+      Serial.print("AvgLoopTime: "); Serial.println(avgLoopTime);*/
     }
 
     void updateControls(int inControlState){
@@ -45,14 +47,42 @@ class FLIGHT_DATA {
       return controlState;
     }
 
-    bool timeForTelemetry(unsigned long telemetryInterval){
-      if( flightTime > nextTelemetryTime ){
-        nextTelemetryTime = flightTime + 500; // 0.5s from now
-        return true;
-      }
-      else{
-        return false;
-      }
+    void updateSensorReadings(){
+      SensorManager->updateReadings();
+    }
+
+    bool sendTelemetry(){
+      /*if (flightTime < (lastTelemetryTime+telemetryInterval)){ // (lastTelemetryTime+telemetryInterval) is the timestamp at which the next telemetry packet should be sent
+        return false; // No telemetry sent
+      }*/
+      
+      float timeSinceTelemetry = flightTime - lastTelemetryTime;
+      float timePerLoop = timeSinceTelemetry / loopsSinceTelemetry;
+      int loopsPerSecond = constrain( timePerLoop, 0, 255 );
+      
+      // Reset counters:
+      loopsSinceTelemetry = 0;
+      lastTelemetryTime = millis();
+      
+      TelemetryManager->addData(reg_onboardLoopSpeed,loopsPerSecond);
+      
+      TelemetryManager->addData(reg_onboardRSSI, Radio->getAvgRSSI()); // Received signal strength
+  
+      TelemetryManager->addData(reg_reportedControlState, getControlState()); // Control Status (normal or "autopilot")
+  
+      // Add telemetry for number of corrupted messages
+      // Sensors:
+      TelemetryManager->addData(reg_currentBattVoltage, SensorManager->getBatteryVoltage());
+      /*sensors.requestTemperatures();
+      sensors.getTempCByIndex(0);*/
+      
+      // Send all telemetry data
+      char* outDataBuffer; // Will point to the beginning of the telemetryBuffer array
+      int outDataLength; // Will contain length of the data in the telemetryBuffer array
+      TelemetryManager->getData(&outDataBuffer,&outDataLength);
+      Radio->transmitData(outDataBuffer, outDataLength); // After this line, *outDataBuffer and outDataLength go out of scope.
+
+      return true; // Telemetry sent
     }
 
     bool handleIncomingData(byte inBytes[], int inLength){
@@ -93,6 +123,15 @@ class FLIGHT_DATA {
               TelemetryManager->addData(reg_reportedDropDoorState,inValue);
             }
             break;
+
+          case reg_requestTelemetry:
+            // Ground requests telemetry
+            
+            if(inValue == reg_requestTelemetry){
+              sendTelemetry();
+              Serial.println("HELLO!");
+            }
+            break;
             
           //case 9:  // Autopilot Toggles //
             /*if(prevAutoMsg == inValue){ // If this message and the last to this register are identical
@@ -116,13 +155,13 @@ class FLIGHT_DATA {
     int getDoorPos     (){ return doorPos; }
     
     int getControlState(){ return controlState; }
-    int getLoopsPerSecond(){ return (1E3 / avgLoopTime); }
+    int getLoopsPerSecond(){ return loopsSinceTelemetry / ((flightTime - lastTelemetryTime)/1000); }
     
   private:
     
-    unsigned long avgLoopTime = 0; // Average number of milliseconds each loop takes
+    int loopsSinceTelemetry = 0;
     unsigned long flightTime = 0; // Millis since program start
-    unsigned long nextTelemetryTime = 0; // Time at which the next telemetry packet should be sent
+    unsigned long lastTelemetryTime = 0; // Millis Time at which the previous telemetry packet was sent
     
     int corruptedMessages = 0; // Number of invalid messages received since last telemetry broadcast
     int controlState = 0; // 0 = Manual, 1 = Emergency Safety (on radio loss), 2 = Waypoints??, 3 = Full Autopilot??
@@ -133,6 +172,6 @@ class FLIGHT_DATA {
     int elevatorPos;
     int rudderPos;
     int throttlePos;
-    int doorPos = unlockedPos; // Door starts unlocked
+    int doorPos = lockedPos; // Door starts locked
 };
 

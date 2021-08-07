@@ -41,8 +41,6 @@ class Radio:
                     self.bytesRead += 1
         
         if self.bytesRead == self.inMessageLength:
-            print("InMessage:")
-            print(self.inMessage)
             msg = self.inMessage
             self.inMessage = []
             self.inMessageLength = 0

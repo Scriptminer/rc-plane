@@ -1,12 +1,12 @@
 
 class RADIO {
   public:
-    RADIO (int max_radio_msg) : maxRadioMsg(max_radio_msg) {
+    RADIO (int max_radio_msg, unsigned long rx_frequency, unsigned long tx_frequency, int tx_power) : maxRadioMsg(max_radio_msg), rxFrequency(rx_frequency), txFrequency(tx_frequency), txPower(tx_power) {
     }
   
-    bool begin(unsigned long frequency, int txPower){
+    bool begin() {
       // Begin LoRa:
-      if (!LoRa.begin(frequency)) {
+      if (!LoRa.begin(rxFrequency)) { // RX Frequency is the default.
         return false;
       }else{
         LoRa.setTxPower(constrain(txPower, 2, 20)); // txPower must be between 2 and 20 
@@ -14,10 +14,13 @@ class RADIO {
       }
     }
     
-    void receiveData(char inDataBuffer[],int* inDataLength){
+    bool receiveData(char inDataBuffer[],int* inDataLength,int waitUntilTimestamp = -1){
       // Write any incoming messages to inDataBuffer, and return the length of the message
       
       int packetSize = LoRa.parsePacket();
+      while(!packetSize && millis() < waitUntilTimestamp){
+        packetSize = LoRa.parsePacket();
+      }
       
       if(packetSize > 0 && packetSize <= maxRadioMsg){
         lastSignal = millis();
@@ -29,16 +32,18 @@ class RADIO {
         }
         *inDataLength = i;
         int avgRSSI = (abs(LoRa.packetRssi())+avgRSSI) / 2; // Rolling average
-        
+        return true;
       }
+      return false;
     }
+    
 
     void transmitData(char txData[], int len){
+      LoRa.setFrequency(txFrequency); // Switch to transmit frequency
       LoRa.beginPacket();
-      for(int i=0;i<len;i++){
-        LoRa.print(txData[i]);
-      }
+      LoRa.write(txData, len);
       LoRa.endPacket();
+      LoRa.setFrequency(rxFrequency); // Return to receive frequency
     }
 
     int getAvgRSSI(){ return avgRSSI; }
@@ -48,6 +53,10 @@ class RADIO {
     const int maxRadioMsg;
     int avgRSSI;
     unsigned long lastSignal; // Time of last signal
+    
+    unsigned long rxFrequency;
+    unsigned long txFrequency;
+    int txPower;
 };
 
 /*

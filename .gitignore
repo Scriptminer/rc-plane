@@ -1,10 +1,17 @@
 **/jetcon
+
 **/jquery.fullscreen-master
 
-**/ArduinoFiles/RC_Plane_Onboard_Control/CommonConstants.h
-**/GroundControl/CommonConstants.py
+**/GroundContol/__pycache__
 
-**/ArduinoFiles/RC_Plane_Onboard_Control/DataManager.h
-**/ArduinoFiles/RC_Plane_Onboard_Control/Radio.h
-**/ArduinoFiles/RC_Plane_Full_Ground_Control/DataManager.h
-**/ArduinoFiles/RC_Plane_Full_Ground_Control/Radio.h
+/ArduinoFiles/RC_Plane_Onboard_Control/CommonConstants.h
+
+/GroundControl/CommonConstants.py
+
+/ArduinoFiles/RC_Plane_Onboard_Control/DataManager.h
+
+/ArduinoFiles/RC_Plane_Onboard_Control/Radio.h
+
+/ArduinoFiles/RC_Plane_Full_Ground_Control/DataManager.h
+
+/ArduinoFiles/RC_Plane_Full_Ground_Control/Radio.h

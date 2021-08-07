@@ -24,6 +24,7 @@ registers = [
     (3,"setThrottle"),
     (4,"setDropDoor"),
     (5,"setAutopilotState"),
+    (6,"requestTelemetry"),
 
     # Plane to Ground registers:
     (64,"currentRoll"),
@@ -44,6 +45,12 @@ registers = [
     (131,"aileronTrimPos"),
     (132,"elevatorTrimPos"),
     (133,"rudderTrimPos"),
+    
+    # Test Channels:
+    (192,"testChannel1"),
+    (193,"testChannel2"),
+    (194,"testChannel3"),
+    (195,"testChannel4"),
 ]
 
 registersPrefix = "reg_"
@@ -54,6 +61,10 @@ constants = [
     ("maxRadioMessageLength",32,"Bytes"),
     ("unlockDoorSignal",100,"Signal to send from ground to unlock door."),
     ("lockDoorSignal",200,"Signal to send from ground to lock door."),
+    ("groundToAirFrequency",433E6),
+    ("airToGroundFrequency",433E6),
+    ("airTelemetryInterval",500,"Milliseconds between requests for telemetry from plane."),
+    ("groundTelemetryInterval",250,"Milliseconds between sending Ground-Pi telemetry."),
     
     # Error message constants:
     ("conflictingDropDoorMessageERR",0,"Two messages sent to the drop door were both different"),
@@ -71,7 +82,12 @@ with open(hFile,"w") as h_file:
     h_file.write("\n")
 
     for const in constants:
-        writeString = "const int "+str(const[0])+" = "+str(const[1])+";"
+        if(abs(const[1]) >= 32767):
+            numType = "long"
+        else:
+            numType = "int"
+        
+        writeString = "const "+numType+" "+str(const[0])+" = "+str(const[1])+";"
         if len(const) == 3: # i.e. if comment exists
             writeString += " // "+const[2]
         h_file.write(writeString+"\n")

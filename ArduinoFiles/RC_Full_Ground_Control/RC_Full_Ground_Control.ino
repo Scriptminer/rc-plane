@@ -1,4 +1,6 @@
 
+#define __HUMAN_READABLE_SERIAL__
+
 #include <SPI.h>
 #include <LoRa.h>
 
@@ -14,17 +16,18 @@ const int trimStep = 1; // Degrees to step trim per click
 BUTTON_HANDLER ButtonHandler;
 DATA_MANAGER TelemetryManager(new char[64], 64);
 DATA_MANAGER RadioDataManager(new char[maxRadioMessageLength], maxRadioMessageLength);
-RADIO Radio(maxRadioMessageLength);
+RADIO Radio(maxRadioMessageLength, airToGroundFrequency, groundToAirFrequency, 2); // rxFrequency, txFrequency, txPower in dBm (2dBm = 1.5849mW, 10dBm = 10mW, 20dBm = 100mW)
 
 void setup() {
   analogReference(EXTERNAL); // Connected to the 3.3V supply
   pinMode(BUTTON_PIN,INPUT_PULLUP);
+  pinMode(4,OUTPUT);// TEMPORARY!
   Serial.begin(38400);
   
   RadioDataManager.addData(reg_setDropDoor,lockDoorSignal); // Door is put in locked position initially
   
   // LoRa Setup:
-  if (!Radio.begin(433E6,2)){ // Frequency, txPower in dBm (2dBm = 1.5849mW, 10dBm = 10mW, 20dBm = 100mW)
+  if (!Radio.begin()){ 
     Serial.println("LoRa setup failed.");
     while (1); // If LoRa doesn't begin, stop execution.
   }
@@ -33,12 +36,14 @@ void setup() {
 void loop() {
   // Control surface classes, initiated with the ranges of the controls: inputMin,inputMax,servoMin,servoCentre,servoMax,maxTrimDeviation:
   static CONTROL ailerons (potLOW,potHIGH,30,90,150,20);
-  static CONTROL elevator (potLOW,potHIGH,30,90,150,20);
+  static CONTROL elevator (potLOW,potHIGH,10,90,180,40);
   static CONTROL rudder   (potLOW,potHIGH,30,90,150,20);
   static CONTROL throttle (potLOW,potHIGH,0 ,90,180,0 );
 
   static unsigned long currentTime = 0; // Time since program start
-  static unsigned long nextTelemetryTime = 0; // Time at which the next telemetry packet should be sent
+  static unsigned long nextGroundTelemetryTransmit = 0; // Time at which the next telemetry packet should be sent.
+  static unsigned long nextAirTelemetryRequest = 0; // Time at which the next attempt to request telemetry from the plane should be made.
+  
   static int avgLoopTime;
   avgLoopTime = (avgLoopTime + (millis()-currentTime)) / 2; // Take rolling average of loop times
   currentTime = millis();
@@ -116,23 +121,39 @@ void loop() {
   }
   
   // Receive data from PI
+  bool requestingTelemetry = false;
+
+  // Append telemetry request to transmit buffer
+  if(currentTime > nextAirTelemetryRequest){
+    nextAirTelemetryRequest = millis() + airTelemetryInterval;
+    requestingTelemetry = true;
+    RadioDataManager.addData(reg_requestTelemetry, reg_requestTelemetry);
+  }
   
   // Transmit data to plane
-  unsigned long txStartTime = millis();
   char* outDataBuffer; // Will point to the beginning of the radio data buffer array
-  int outDataLength; // Will contain length of the data in the radio data buffe array
+  int outDataLength = 0; // Will contain length of the data in the radio data buffer array
   RadioDataManager.getData(&outDataBuffer,&outDataLength);
   Radio.transmitData(outDataBuffer,outDataLength);
   
-  // Receive data from plane and pass straight to PI
-  static char inDataBuffer[maxRadioMessageLength]; // Actual dataBuffer array
-  int inDataLength; // Will contain length of data in the data buffer
-  Radio.receiveData(inDataBuffer,&inDataLength);
-  TelemetryManager.addDataArray(inDataBuffer,inDataLength);
+  // Listen for returned telemetry
+  if(requestingTelemetry){
+    // Receive data from plane and pass straight to PI
+    static char inDataBuffer[maxRadioMessageLength]; // Actual dataBuffer array
+    int inDataLength = 0; // Will contain length of data in the data buffer
+
+    Radio.receiveData(inDataBuffer,&inDataLength,millis()+45); // Wait no more than 45ms (avg ideal return seems to be 39-40ms)
+
+    if(inDataLength > 0){
+      TelemetryManager.addData(reg_testChannel1, inDataLength);
+    }
+    TelemetryManager.addDataArray(inDataBuffer,inDataLength);
+    
+  }
   
   // Feedback data to PI:
-  if(currentTime > nextTelemetryTime){
-    nextTelemetryTime = millis() + 250; // 0.25 seconds from now
+  if(currentTime > nextGroundTelemetryTransmit){
+    nextGroundTelemetryTransmit = millis() + groundTelemetryInterval;
     
     TelemetryManager.addData(reg_setAilerons, ailerons.getPos());
     TelemetryManager.addData(reg_setElevator, elevator.getPos());
@@ -146,13 +167,22 @@ void loop() {
     TelemetryManager.addData(reg_groundLoopSpeed,constrain(avgLoopTime,0,255));
 
     char* outDataBuffer; // Will point to the beginning of the telemetryBuffer array
-    int outDataLength; // Will contain length of the data in the telemetryBuffer array
+    int outDataLength = 0; // Will contain length of the data in the telemetryBuffer array
     TelemetryManager.getData(&outDataBuffer,&outDataLength);
+    
     transmitToPI(outDataBuffer,outDataLength); // After this line, *outDataBuffer and outDataLength go out of scope.
   }
 }
 
 void transmitToPI(char txdata[], int len){
-  Serial.print((char) len); // Send length of message being sent.
-  Serial.write(txdata,len);
+  #ifdef __HUMAN_READABLE_SERIAL__
+    for(int i=0;i<len;i++){
+      Serial.print((int) ((unsigned char) txdata[i]));Serial.print(",");
+    }
+    Serial.println();
+  #else
+    Serial.print((char) len); // Send length of message being sent.
+    Serial.write(txdata,len);
+  #endif
 }
+

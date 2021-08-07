@@ -6,6 +6,7 @@
 #define reg_setThrottle 3
 #define reg_setDropDoor 4
 #define reg_setAutopilotState 5
+#define reg_requestTelemetry 6
 #define reg_currentRoll 64
 #define reg_currentPitch 65
 #define reg_currentYaw 66
@@ -22,10 +23,18 @@
 #define reg_aileronTrimPos 131
 #define reg_elevatorTrimPos 132
 #define reg_rudderTrimPos 133
+#define reg_testChannel1 192
+#define reg_testChannel2 193
+#define reg_testChannel3 194
+#define reg_testChannel4 195
 
 const int batteryVoltageReadingOffset = 600; // Provisional number!!
 const int maxRadioMessageLength = 32; // Bytes
 const int unlockDoorSignal = 100; // Signal to send from ground to unlock door.
 const int lockDoorSignal = 200; // Signal to send from ground to lock door.
+const long groundToAirFrequency = 433000000.0;
+const long airToGroundFrequency = 433000000.0;
+const int airTelemetryInterval = 500; // Milliseconds between requests for telemetry from plane.
+const int groundTelemetryInterval = 250; // Milliseconds between sending Ground-Pi telemetry.
 const int conflictingDropDoorMessageERR = 0; // Two messages sent to the drop door were both different
 const int conflictingControlStateMessageERR = 1; // Two messages sent to change the control state were both different

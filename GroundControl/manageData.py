@@ -102,6 +102,7 @@ class ManageData():
                 self.dataTable["yaw"]["value"] = val
             
             elif reg == registers["reportedDropDoorState"]:
+                print("*****"*100)
                 if val == 100:
                     self.dataTable["locked"]["value"] = " Unlocked" # Servo position
                     self.dataTable["door"]["value"] = " Open" # Once the door is open, it does not propperly shut
@@ -169,7 +170,10 @@ class ManageData():
             
             elif reg == registers["rudderTrimPos"]:
                 self.dataTable["rudderTrim"]["value"] = val
-                
+            
+            # Testing registers:
+            elif reg == registers["testChannel1"]:
+                print("Test channel 1: {}".format(val))
     
     def handlePiLoopData(self,avgLoopTime,currentTime):
         self.dataTable["piLoopSpeed"]["value"] = round(1/avgLoopTime)
