@@ -14,7 +14,7 @@ class RADIO {
       }
     }
     
-    bool receiveData(char inDataBuffer[],int* inDataLength,int waitUntilTimestamp = -1){
+    bool receiveData(char inDataBuffer[],int* inDataLength,unsigned long waitUntilTimestamp = 0){
       // Write any incoming messages to inDataBuffer, and return the length of the message
       
       int packetSize = LoRa.parsePacket();
@@ -50,13 +50,13 @@ class RADIO {
     unsigned long getLastSignal(){ return lastSignal; }
 
   private:
-    const int maxRadioMsg;
-    int avgRSSI;
-    unsigned long lastSignal; // Time of last signal
+    const int maxRadioMsg = 0;
+    int avgRSSI = 0;
+    unsigned long lastSignal = 0; // Time of last signal
     
-    unsigned long rxFrequency;
-    unsigned long txFrequency;
-    int txPower;
+    unsigned long rxFrequency = 433E6; // Default
+    unsigned long txFrequency = 433E6; // Default
+    int txPower = 2; // Default
 };
 
 /*

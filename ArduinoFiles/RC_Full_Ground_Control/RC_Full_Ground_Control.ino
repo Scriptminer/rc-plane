@@ -1,5 +1,5 @@
 
-#define __HUMAN_READABLE_SERIAL__
+//#define __HUMAN_READABLE_SERIAL__
 
 #include <SPI.h>
 #include <LoRa.h>
@@ -31,6 +31,7 @@ void setup() {
     Serial.println("LoRa setup failed.");
     while (1); // If LoRa doesn't begin, stop execution.
   }
+  Serial.println("Startup Success!");
 }
 
 void loop() {
@@ -129,12 +130,14 @@ void loop() {
     requestingTelemetry = true;
     RadioDataManager.addData(reg_requestTelemetry, reg_requestTelemetry);
   }
-  
+
+  unsigned long tmp = millis();
   // Transmit data to plane
   char* outDataBuffer; // Will point to the beginning of the radio data buffer array
   int outDataLength = 0; // Will contain length of the data in the radio data buffer array
   RadioDataManager.getData(&outDataBuffer,&outDataLength);
   Radio.transmitData(outDataBuffer,outDataLength);
+  Serial.println(millis()-tmp);
   
   // Listen for returned telemetry
   if(requestingTelemetry){

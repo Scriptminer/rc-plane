@@ -39,7 +39,8 @@ class FLIGHT_DATA {
 
     int updateControlState(unsigned long lastSignal){
       // May have more complex criterea in future - just now emergency mode engages after 2 seconds of no signal
-      if(flightTime-Radio->getLastSignal() > 2000){ // If last signal was more than 2 seconds ago
+      
+      if(millis()-lastSignal > 2000){ // If last signal was more than 2 seconds ago
         controlState = 1; // Signal Loss: Emergency
       }else{
         controlState = 0; // Manual

@@ -63,8 +63,10 @@ void setup(){
   // LoRa Setup:
   if(!ThisFlight.beginRadio()){
     digitalWrite(controlStateLED,HIGH);
+    Serial.println("LoRa setup failed.");
     while (true); // Stops the program
   }
+  Serial.println("LoRa started.");
 
   /*sensors.begin();*/ 
 }
@@ -74,16 +76,17 @@ void setup(){
 int loops = 0; // Keeps track of how many loops have passed
 
 void loop(){
+  
   // Receive Incoming Data
   static byte inDataBuffer[maxRadioMessageLength];
   int inDataLength = 0;
   ThisFlight.Radio->receiveData(inDataBuffer,&inDataLength);
-  
+
   if(!ThisFlight.handleIncomingData(inDataBuffer, inDataLength)){
     // Error parsing data:
     ThisFlight.incrementCorruptedMessages();
   }
-
+  
   // Handles emergency mode
   ThisFlight.updateFlightData();
   
