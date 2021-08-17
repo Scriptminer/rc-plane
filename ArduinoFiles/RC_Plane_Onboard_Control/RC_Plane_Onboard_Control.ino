@@ -32,7 +32,7 @@ SENSOR_MANAGER __tmpSensorManager();
 DATA_MANAGER __tmpTelemetryManager(new byte[64], 64);
 */
 
-FLIGHT_DATA ThisFlight(new RADIO(maxRadioMessageLength,groundToAirFrequency,airToGroundFrequency,2), // rxFrequency, txFrequency, txPower in dBm (2dBm = 1.5849mW, 10dBm = 10mW, 20dBm = 100mW)
+FLIGHT_DATA ThisFlight(new RADIO(maxRadioMessageLength,groundToAirFrequency,airToGroundFrequency,groundToAirBandwidth,airToGroundBandwidth,2), // maxMessageLength, rxFrequency, txFrequency, rxBandwidth, txBandwidth, txPower in dBm (2dBm = 1.5849mW, 10dBm = 10mW, 20dBm = 100mW)
                        new SENSOR_MANAGER(),
                        new DATA_MANAGER(new byte[maxRadioMessageLength], maxRadioMessageLength)
                       );
@@ -73,10 +73,7 @@ void setup(){
 
 ///////////////////// CORE LOOP /////////////////////
 
-int loops = 0; // Keeps track of how many loops have passed
-
 void loop(){
-  
   // Receive Incoming Data
   static byte inDataBuffer[maxRadioMessageLength];
   int inDataLength = 0;
@@ -106,4 +103,5 @@ void loop(){
   
   // Update sensor readings (telemetry is sent only on request)
   ThisFlight.updateSensorReadings();
+
 }

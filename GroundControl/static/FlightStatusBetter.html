@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>FLIGHT STATUS</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<script src="static/jquery.min.js"></script>
+<script src="static/jquery.fullscreen.min.js"></script>
+<script src="http://cdn.jsdelivr.net/sockjs/0.3/sockjs.min.js"></script> <!-- Will have to be a served file - not website in final version -->
+<!-- Local Files -->
+<script src="static/spectrum.js"></script>
+<link rel="stylesheet" type="text/css" href="static/spectrum.css">
+<link rel="stylesheet" type="text/css" href="static/FlightStatusStyles.css">
+<script src="static/FlightStatus.js"></script>
+</head>
+<body>
+  <span id="topHeading"><u><b>Aidan's Flight Tracker Following: <span id="planeTitle"></span></b></u></span>
+  <br>
+  <br>
+  <span id="serverData"><a id="connect" href="#">Connect</a>&nbsp;|&nbsp;Status: <span id="status">disconnected</span></span>
+  <table id="displayGrid">
+
+  </table>
+</body>
+</html>

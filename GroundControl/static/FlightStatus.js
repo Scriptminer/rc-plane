@@ -1,270 +1,14 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>FLIGHT STATUS</title>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<style>
-
-body {
-    background-color: #ccc;
-    background: url('static/FighterBackground.png');
-    -webkit-background-size: cover;
-    -moz-background-size: cover;
-    -o-background-size: cover;
-    background-size: cover;
-}
-
-span {
-    opacity:1;
-}
-
-table {
-    border: 0.2vw solid purple;
-    border-collapse: collapse;
-}
-
-td {
-    position: relative;
-    width: 25%;
-    height: 22%;
-    border:inherit;
-}
-
-tr {
-    height: 23%;
-    width: 100%;
-    border: 0.2vw solid purple;
-    border-collapse: collapse;
-}
-
-tbody {
-    position:relative;
-}
-
-#displayGrid {
-    position: absolute;
-    /*width: 94%;
-    height: 80%;*/
-
-    background-color: rgba(220,220,220,0.5);
-}
-
-#topHeading {
-    font-size: 130%;
-}
-
-#logTitle {
-    color: #52a;
-    /*font-size: 3.5vh; ***/
-    align: center;
-}
-
-#videoTitle {
-    color: #fff;
-    /*font-size: 3.5vh; ***/
-}
-
-#videoBox {
-    background-color: rgba(0,0,0,0);
-}
-
-#video {
-    position:absolute;
-    width:100%;
-    height:100%;
-    left:0%;
-    top:0%;
-    background: url('https://media.giphy.com/media/iF3M9gPPCdulq/giphy.gif') rgba(10,10,10,0.8);
-    opacity:0.3;
-    z-index:-1;
-}
-
-#connect {
-    background-color:#aaa;
-    border: 0.3vw solid #aaa;
-    border-radius: 0.3vw;
-}
-
-#serverData {
-    background-color:#ccc;
-    border: 0.8vw solid #ccc;
-    border-radius: 0.5vw;
-}
-
-#chat {
-    word-wrap: break-word;
-    overflow-y: scroll;
-}
-
-#text {
-    position:absolute;
-    width:95%;
-    height:4%;
-    left:1%;
-    bottom:0%;
-    /*font-size:0.8vw; ***/
-    font-size:inherit;
-}
-
-.largeChat {
-    font-size: 200%; /* Larger than normal chat size */
-    color:#c3c3c3;
-    font-weight:bold;
-}
-
-.controlBox {
-    position: absolute;
-    /*width: 96%;
-    height: 95%;
-    left: 2%;
-    top: 2%;*/
-
-    width: 100%;
-    height: 100%;
-    left: 0%;
-    top: 0%;
-
-    background-color: rgba(130,130,130,0.3);
-    /*font-size: 2.5vh;***/
-}
-
-.controlTitle {
-    color: #03a;
-    /*font-size: 3vh;***/
-    font-weight:bold;
-    font-style:italic;
-}
-
-.controlImg {
-    position:absolute;
-    right: 2%;
-    top: 2%;
-    background-size: cover;
-}
-
-.controlData {
-    font-weight: bold;
-}
-
-.subnote {
-    color: #446;
-    font-size: 60%;
-}
-
-.noSig {
-    color:red;
-    font-weight:bold;
-}
-
-.sig {
-    color:green;
-    font-weight:bold;
-}
-
-.hidden {
-    border: none;
-    border-colapse:collapse;
-}
-
-.LEDrow {
-    height:8%;
-    border-colapse:collapse;
-    border:none;
-}
-
-.LEDbox {
-    position:absolute;
-    height:80%;
-    width:45%;
-    top:10%;
-    text-align:center;
-    border-radius:1vw;
-    font-weight:bold;
-}
-
-.on {
-    background-color:yellow;
-    background-clip:border-box;
-}
-
-.off {
-    background-color:#444;
-    background-clip:border-box;
-}
-
-/*.chatInput {
-    position:absolute;
-    width:95%;
-    height:1.2vw;
-    left:2.5%;
-    bottom:0%;
-    font-size:0.8vw;
-    border-top:0.2vw solid #777;
-    color:#999;
-}*/
-
-.serverMsg {
-    font-style:italic;
-}
-
-.serverMsgGreen {
-    font-style:italic;
-    color:lime;
-}
-
-.serverMsgYellow {
-    font-style:italic;
-    color:#c80;
-}
-
-.serverMsgRed {
-    font-style:italic;
-    color:#f00;
-}
-
-.name {
-    font-weight:bold;
-}
-
-.nameInput {
-    position:absolute;
-    width:20%;
-    /*height:1.2vw; ***/
-    /*font-size:0.8vw;***/
-    font-size: inherit;
-    height:6%;
-
-    right:7%;
-    top:1%;
-}
-
-</style>
-<script src="static/jquery.min.js"></script>
-<script src="static/jquery.fullscreen.min.js"></script>
-<script src="http://cdn.jsdelivr.net/sockjs/0.3/sockjs.min.js"></script> <!-- Will have to be a served file - not website in final version -->
-<!-- Local Files -->
-<script src="static/spectrum.js"></script>
-<link rel="stylesheet" type="text/css" href="static/spectrum.css">
-<script>
 
 $(function() {
     setupDisplay();
     var conn = null;
 
     function log(msg, msgClass) {
-
       var control = $('#chat');
       control.html(control.html() +'<span class="'+ msgClass +'">'+ msg + '</span><br/>');
       control.scrollTop(control.scrollTop() + 1000);
       console.log(msg);
-
-      //$(document).find('.sp-container').remove(); // Removes the previous container
-
-      //$(".sp-picker-container").html($(".sp-picker-container").html() + "<input class='nameInput' maxlength='16' type='text'/>");
-
     }
-
-    log("<span class='largeChat'>--CHAT START--</span><br>Welcome to the flight status chat room following the "+ planeTitle +".<br>Change your name and the colour of it in the top right corner if you wish!<br>To change chat size, enter <i>/size=100%</i>, reset is <i>/size=default</i><br><i>Hope you enjoy this flight with Daidan (Dan-dan? Aidiel?!) Airways! 😉</i><br>");//
 
     function connect() {
       disconnect();
@@ -336,7 +80,7 @@ $(function() {
         }else{
             sender.className = sender.name;
         }
-        
+
         if(server){
             var message = jQuery('<p>' + inMessage + ' </p>').html(); // Allows html tags in server messages
             console.log("ServerMsg: ");
@@ -344,7 +88,7 @@ $(function() {
         }else{
             var message = jQuery('<p>' + inMessage + ' </p>').text(); // Converts the html to plain text
         }
-        
+
         var html = "<span class='name "+ sender.className +"' style='color:"+ sender.colour +"'>"+ sender.name +": </span>"+ message; // Puts together the line of the message
         log(html);
     }
@@ -404,81 +148,7 @@ $(function() {
       return false;
     });
 
-    window.submitMsg = function(){
-        var text = $('#text').val();
-        $("#chatform").trigger("reset"); // Clears form
-
-        // Handles chat commands
-        
-        if(text.charAt(0) == "/"){
-            var cmd = text.split("=");
-            if(cmd[1]){ // If there was an equals sign
-                if(cmd[0] == "/key"){
-                    permissionKey = cmd[1];
-                    log("Key '"+ permissionKey +"' has been sucessfully entered.","serverMsgGreen");
-                    $("#chatform").trigger("reset"); // Clears form
-                    return;
-                }else if(cmd[0] == "/size"){
-                    if(cmd[1] == "default" || cmd[1] == "reset"){
-                        var parentHeight = $("#chat").parent().height();
-                        $("#chat").css({"font-size":(parentHeight*0.05)+"px"});
-                        log("Resetting font size.","serverMsgGreen");
-                    }else if(cmd[1].slice(-1) == "%"){ // If it is a percentage
-                        cmd[1] = cmd[1].slice(0,-1); // Removes last character
-                        console.log("cmd[1] = "+ cmd[1]);
-                        var parentHeight = $("#chat").parent().height();
-                        var size = parentHeight*0.05*(cmd[1]/100);
-                        $("#chat").css({"font-size":size+"px"});
-                        log("Setting font size to "+cmd[1]+"% of normal.","serverMsgGreen");
-                    }
-                    return;
-                }else{
-                    log("Unrecognised command.","serverMsgRed");
-                }
-            }else{
-                log("Invalid Command - bad format.","serverMsgRed");
-                return;
-            }
-        }
-
-        // Handles normal message
-        if(text.length > maxCharacters){ // If the message is too long
-            if(text.length > 500000){ // If the message is VERY long
-                var comment = text.length + ". ~claps~ Your spamming shows dedication (but it is still not permited...)!";
-            }else{
-                var comment = text.length + "...";
-                console.log("hi");
-            }
-            log(("Messages over "+ maxCharacters +" characters long are not permitted! Yours was: "+ comment),"serverMsgRed");
-            return; // Doesn't send the message, just prints the warning to screen
-        }
-        var message = {type:"chat",data:{msg:text,sender:thisSender}};
-        //addChat(message.data.msg,message.data.sender); // Testing purposes only - message will only appear when returned from server
-        sendJson(message); // Sends the message
-        return false;
-    }
-
-    // Submits message if enter is pressed in form
-    $("#chatform").keypress(function(e){
-        if($('#text').val().length > maxCharacters){ // If the message is too long
-            $('#text').css({"color":"red"});
-        }else{
-            $('#text').css({"color":"#222"});
-        }
-    });
-
-    $(".nameInput").keyup(function(e){
-        console.log("hiya");
-        thisSender.name = $(".nameInput").val();
-        $(".thisSender").html(thisSender.name+": ");
-    });
-
-    $(document).keypress(function(e){
-        if(e.keyCode == 13){ // enter key
-            $(".nameInputWrapper").spectrum("hide");
-        }
-    });
-    
+    // Set page to fullscreen on doubleclick:
     $(document).dblclick(function(e){
         if($.fullscreen.isFullScreen()){
             $.fullscreen.exit();
@@ -486,7 +156,7 @@ $(function() {
             $("body").fullscreen();
         }
     });
-    
+
     var windowWidth = $(window).width();
     var windowHeight = $(window).height();
 
@@ -516,11 +186,11 @@ $(function() {
         console.log("Resizing Table");
     });
 
-    $(".LEDbox").click(function(e){ // When a light button is clicked
+    /*$(".LEDbox").click(function(e){ // When a light button is clicked
         if(e.target.id != "lightsTitle"){
         sendJson({type:"input",data:{input:e.target.id,permissionKey}}); // Sends the target and the key
         }
-    });
+    });*/
 
     $(".nameInputWrapper").spectrum({
         move: function(colour){
@@ -575,15 +245,58 @@ function setupDisplay(){
 
     ///// List of data for all boxes /////
 
-    displayData = [{name:"dropdoors",title:"DROP DOORS",x:0,y:3,img:"static/controls/dropdoors.png",lines:[{description:"Locked",id:"locked"},{description:"Door Pos",id:"door"},{description:"Safe",id:"doorSafety"}]},
-                   {name:"radio",title:"RADIO LINK",x:1,y:2,img:"static/controls/radio.png",lines:[{description:"RasPi Loops",id:"piLoopSpeed"},{description:"NANO Loops",id:"nanoLoopSpeed"},{description:"UNO Loops",id:"unoLoopSpeed"},{description:"Ground Time",id:"groundTime"},{description:"Autopilot Mode",id:"autopilotMode"}]},
-                   {name:"battery",title:"BATTERY",x:2,y:2,img:"static/controls/battery.png",lines:[{description:"Voltage",id:"voltage"},{description:"Current Draw",id:"amps"},{description:"Temperature",id:"batteryTemperature"}]},
-                   {name:"other",title:"OTHER DATA",x:3,y:1,img:"static/controls/other.png",lines:[{description:"Altitude",id:"altitude"},{description:"Outside Temp",id:"outsideTemperature"},{description:"Airspeed",id:"airspeed"},{description:"G-Force",id:"gforce"}]},
+    displayData = [{name:"dropdoors",title:"DROP DOORS",row:0,col:1,lines:[
+                     {description:"Locked",id:"locked"},
+                     {description:"Door Pos",id:"door"},
 
-                   {name:"ailerons",title:"AILERONS",x:0,y:0,img:"static/controls/ailerons.png",lines:[{description:"Input",id:"aileronsInput"},{description:"Trim Centre",id:"aileronsTrim"},{description:"Control Range",id:"aileronsRange"},{description:"Roll",id:"roll"}]},
-                   {name:"elevator",title:"ELEVATOR",x:1,y:0,img:"static/controls/elevator.png",lines:[{description:"Input",id:"elevatorInput"},{description:"Trim Centre",id:"elevatorTrim"},{description:"Control Range",id:"elevatorRange"},{description:"Pitch",id:"pitch"}]},
-                   {name:"rudder",title:"RUDDER",x:2,y:0,img:"static/controls/rudder.png",lines:[{description:"Input",id:"rudderInput"},{description:"Trim Centre",id:"rudderTrim"},{description:"Control Range",id:"rudderRange"},{description:"Yaw",id:"yaw"}]},
-                   {name:"throttle",title:"THROTTLE",x:3,y:0,img:"static/controls/throttle.png",lines:[{description:"Input",id:"throttleInput"},{description:"Control Range",id:"throttleRange"},{description:"Speed",id:"speed"}]},
+                   {name:"radio",title:"RADIO LINK",row:0,col:3,lines:[
+                     {description:"Onboard RSSI",id:"onboardRSSI"},
+                     {description:"Packets Received",id:"radioPacketRate"},
+                     {description:"Ground RSSI",id:"groundRSSI"},
+                     {description:"Serial Connection",id:"serialConnection"}
+                   ]},
+
+                   {name:"livestatus",title:"STATUS",row:0,col:2,lines:[
+                     {description:"RasPi Loops",id:"piLoopSpeed"},
+                     {description:"NANO Loops",id:"nanoLoopSpeed"},
+                     {description:"UNO Loops",id:"unoLoopSpeed"},
+                     {description:"Ground Time",id:"groundTime"},
+                     {description:"Autopilot Mode",id:"autopilotMode"},
+                   ]},
+
+                   {name:"battery",title:"BATTERY",row:1,col:2,lines:[
+                     {description:"Voltage",id:"voltage"},
+                     {description:"Current Draw",id:"amps"},
+                     {description:"Temperature",id:"batteryTemperature"}]},
+
+                   {name:"other",title:"OTHER DATA",row:2,col:2,lines:[
+                     {description:"Altitude",id:"altitude"},
+                     {description:"Outside Temp",id:"outsideTemperature"},
+                     {description:"Airspeed",id:"airspeed"},
+                     {description:"G-Force",id:"gforce"}]},
+
+                   {name:"ailerons",title:"AILERONS",row:0,col:0,lines:[
+                     {description:"Input",id:"aileronsInput"},
+                     {description:"Trim Centre",id:"aileronsTrim"},
+                     {description:"Control Range",id:"aileronsRange"},
+                     {description:"Roll",id:"roll"}]},
+
+                   {name:"elevator",title:"ELEVATOR",row:1,col:0,lines:[
+                     {description:"Input",id:"elevatorInput"},
+                     {description:"Trim Centre",id:"elevatorTrim"},
+                     {description:"Control Range",id:"elevatorRange"},
+                     {description:"Pitch",id:"pitch"}]},
+
+                   {name:"rudder",title:"RUDDER",row:2,col:0,lines:[
+                     {description:"Input",id:"rudderInput"},
+                     {description:"Trim Centre",id:"rudderTrim"},
+                     {description:"Control Range",id:"rudderRange"},
+                     {description:"Yaw",id:"yaw"}]},
+
+                   {name:"throttle",title:"THROTTLE",row:3,col:0,lines:[
+                     {description:"Input",id:"throttleInput"},
+                     {description:"Control Range",id:"throttleRange"},
+                     {description:"Speed",id:"speed"}]},
                    ];
 
     for(var i=0;i<displayData.length;i++){ // Constructs all the controls
@@ -596,12 +309,12 @@ function setupDisplay(){
 
             data[line.id] = "--"; // Adds entry into data object
         }
-        html += "<div id='"+ control.name +"Img' class='controlImg' style='background-image:url(&quot;"+ control.img +"&quot;)'></div>"; // Adds image
+        html += "<div id='"+ control.name +"Img' class='controlImg' style='background-image:url(&quot;static/controls/"+ control.name +".png&quot;)'></div>"; // Adds image
         html += "</div>";
 
-        positions[control.x][control.y] = html;
+        positions[control.row][control.col] = html;
     }
-    
+
     ///// TABLE POSITION SETUP /////
     var table = document.getElementById("displayGrid");
     var tableBody = document.createElement("tbody");
@@ -618,45 +331,16 @@ function setupDisplay(){
         }
     }
 
-    // Adds the hidden row so the cells are properly sized
-    var LEDs = [{description:"<b>LIGHTS: </b>",id:"lightsTitle"},
-                {description:"Front Light",id:"frontLight"},
-                {description:"Wing Tips",id:"wingSolid"},
-                {description:"Wing Strobe",id:"wingStrobe"},
-                {description:"Tail Strobe",id:"tailStrobe"},
-                {description:"Drop Light",id:"dropLight"},
-                {description:"Tail Nav Lights",id:"tailNavs"},
-                {description:"Body Lights",id:"bodyLights"},];
-
-    var LEDsRow = document.createElement("tr");
-    tableBody.appendChild(LEDsRow);
-    $(LEDsRow).addClass("LEDrow");
-    for(var i=0;i<4;i++){
-        var cell = document.createElement("td");
-        LEDsRow.appendChild(cell);
-
-        for(var j=0;j<2;j++){ // Goes through the two LED boxes
-            var LEDbox = document.createElement("div");
-            cell.appendChild(LEDbox);
-            $(LEDbox).html(LEDs[(i*2)+j].description);
-            LEDbox.id = LEDs[(i*2)+j].id;
-            $(LEDbox).addClass("LEDbox");
-            var fontSize = $(LEDbox).height()*0.4;
-            $(LEDbox).css({"left":(j*50)+2.5+"%","font-size":fontSize});
-            data[LEDbox.id] = false;
-        }
-    }
-
     ///// ADDITIONAL STYLING /////
 
     $("#logBox").parent().attr('colspan',2); // Makes the logBox 2 cells wide
     $("#logBox").parent().attr('rowspan',1); // Makes the logBox 1 cell tall
     $("#videoBox").parent().attr('colspan',2);
     $("#videoBox").parent().attr('rowspan',2);
-    
+
     windowWidth = $(window).width();
     windowHeight = $(window).height();
-    
+
     $("#displayGrid").width(windowWidth*0.94);
     $("#displayGrid").height(windowHeight*0.8);
     $("#displayGrid").offset({left:windowWidth*0.03,top:windowHeight*(1-0.8-0.03)});
@@ -674,7 +358,7 @@ function setupDisplay(){
 
     $(".nameInput").val(thisSender.name);
     $(".nameInput").css({"color":thisSender.colour});
-    
+
     // Font Handling
     var elems = [{id:"#logTitle",size:0.1},{id:"#videoTitle",size:0.1},{id:"#chatform",size:0.05},{id:"#chat",size:0.05},{className:".controlTitle",size:0.16},{className:".controlBox",size:0.14},{className:".nameInputWrapper",size:0.05}];
     for(var i=0;i<elems.length;i++){
@@ -750,14 +434,3 @@ function flashError(id,toggle){
         $("#"+id).css("color","rgba(180,0,0,1)"); // Flash text red
     };
 }
-
-</script>
-</head>
-<body>
-<span id="topHeading"><u><b>Aidan's Flight Tracker Following: <span id="planeTitle"></span></b></u></span>
-<br>
-<br>
-<span id="serverData"><a id="connect" href="#">Connect</a>&nbsp;|&nbsp;Status: <span id="status">disconnected</span></span>
-<table id="displayGrid"></table>
-</body>
-</html>

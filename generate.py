@@ -31,29 +31,49 @@ registers = [
     (65,"currentPitch"),
     (66,"currentYaw"),
     (67,"reportedDropDoorState"),
-    (68,"onboardLoopSpeed","Calculated execution loops per second"),
+    (68,"onboardLoopSpeed","Calculated centimicroseconds each loop takes on average."),
     (69,"reportedControlState"),
     (70,"onboardRSSI","Received signal strength (as a positive value, not negative)"),
     (71,"currentBattVoltage","Voltage of battery (raw reading - processing to occur on PI)"),
     (72,"onboardCorruptedMessages"),
     (73,"onboardError",""), # See below in program for error codes
+    (74,"onboardPacketReceiveRate","Number of packets received since last request"),
 
     # Ground Arduino to PI registers:
-    (128,"groundLoopSpeed"),
+    (128,"groundLoopSpeed","Milliseconds each loop takes on average."),
     (129,"groundRSSI"),
-    (130,"groundRadioStarted","2 for success, 1 for failure"),
+    (130,"groundRadioStarted","0 for success, 1 for failure"),
     (131,"aileronTrimPos"),
     (132,"elevatorTrimPos"),
     (133,"rudderTrimPos"),
+    (134,"groundPacketSendRate","Incremented only when transmitted packet is >0 bytes."),
     
     # Test Channels:
     (192,"testChannel1"),
     (193,"testChannel2"),
     (194,"testChannel3"),
     (195,"testChannel4"),
+    
+    (255,"DO_NOT_USE"),
 ]
 
 registersPrefix = "reg_"
+
+# Ground to Air radio link:
+controlCentreFrequency = 458.4875E6 # 458.4875 MHz, IR2030 pg69 (version of April 2021)
+controlChannelNumber = 23 # Can be anywhere from 1-40
+controlChannelSpacing = 25E3 # 25kHz
+groundToAirBandwidth = 125E3 # 125kHz, aka 5 channels wide. Supported values: 7.8E3, 10.4E3, 15.6E3, 20.8E3, 31.25E3, 41.7E3, 62.5E3, 125E3, 250E3, and 500E3
+groundToAirFrequency = controlCentreFrequency + (controlChannelNumber * controlChannelSpacing)
+print("groundToAirFrequency: {0}Hz, groundToAirBandwidth: {1}:Hz (channel {2})".format(groundToAirFrequency,groundToAirBandwidth,controlChannelNumber))
+
+# Air to Ground radio link:
+telemetryCentreFrequency = 434.04E6 - 25E3 # 434.04 Mhz - 25kHz channel spacing, IR2030 pg69 (version of April 2021)
+telemetryChannelNumber = 17 # Can be anywhere from 1-30
+telemetryChannelSpacing = 25E3
+airToGroundBandwidth = 125E3 # 125kHz, aka 5 channels wide. Supported values: 7.8E3, 10.4E3, 15.6E3, 20.8E3, 31.25E3, 41.7E3, 62.5E3, 125E3, 250E3, and 500E3
+airToGroundFrequency = telemetryCentreFrequency + (telemetryChannelNumber * telemetryChannelSpacing)
+print("airToGroundFrequency: {0}Hz, airToGroundBandwidth: {1}:Hz (channel {2})".format(airToGroundFrequency,airToGroundBandwidth,telemetryChannelNumber))
 
 # Shared constants in the form: (constant name,constant value,[comments])
 constants = [
@@ -61,8 +81,10 @@ constants = [
     ("maxRadioMessageLength",32,"Bytes"),
     ("unlockDoorSignal",100,"Signal to send from ground to unlock door."),
     ("lockDoorSignal",200,"Signal to send from ground to lock door."),
-    ("groundToAirFrequency",433E6),
-    ("airToGroundFrequency",433E6),
+    ("groundToAirFrequency",groundToAirFrequency),
+    ("groundToAirBandwidth",groundToAirBandwidth),
+    ("airToGroundFrequency",airToGroundFrequency),
+    ("airToGroundBandwidth",airToGroundBandwidth),
     ("airTelemetryInterval",500,"Milliseconds between requests for telemetry from plane."),
     ("groundTelemetryInterval",250,"Milliseconds between sending Ground-Pi telemetry."),
     

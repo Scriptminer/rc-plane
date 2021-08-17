@@ -17,10 +17,6 @@ class FLIGHT_DATA {
     
     void updateFlightData(){
       loopsSinceTelemetry++;
-      flightTime = millis();
-      /*unsigned long timeDif = millis() - flightTime;
-      avgLoopTime = (avgLoopTime + timeDif) / 2; // Take rolling average of loop times
-      Serial.print("AvgLoopTime: "); Serial.println(avgLoopTime);*/
     }
 
     void updateControls(int inControlState){
@@ -51,24 +47,21 @@ class FLIGHT_DATA {
     void updateSensorReadings(){
       SensorManager->updateReadings();
     }
-
+    
     bool sendTelemetry(){
-      /*if (flightTime < (lastTelemetryTime+telemetryInterval)){ // (lastTelemetryTime+telemetryInterval) is the timestamp at which the next telemetry packet should be sent
-        return false; // No telemetry sent
-      }*/
       
-      float timeSinceTelemetry = flightTime - lastTelemetryTime;
-      float timePerLoop = timeSinceTelemetry / loopsSinceTelemetry;
-      int loopsPerSecond = constrain( timePerLoop, 0, 255 );
+      float timeSinceTelemetry = millis() - lastTelemetryTime;
+      float secondsSinceTelemetry = timeSinceTelemetry / 1000.0;
       
-      // Reset counters:
-      loopsSinceTelemetry = 0;
-      lastTelemetryTime = millis();
+      TelemetryManager->addData(reg_onboardLoopSpeed,getAvgLoopTime());
+      Serial.println(getAvgLoopTime());
       
-      TelemetryManager->addData(reg_onboardLoopSpeed,loopsPerSecond);
+      TelemetryManager->addData(reg_onboardRSSI, abs(Radio->getAvgRSSI())); // Received signal strength
+
+      float radioPacketsPerSecond = ((float) radioPacketsSinceLastTelemetry) / secondsSinceTelemetry;
+      TelemetryManager->addData(reg_onboardPacketReceiveRate, (int) radioPacketsPerSecond);
+      radioPacketsSinceLastTelemetry = 0; // Reset radio packets counter.
       
-      TelemetryManager->addData(reg_onboardRSSI, Radio->getAvgRSSI()); // Received signal strength
-  
       TelemetryManager->addData(reg_reportedControlState, getControlState()); // Control Status (normal or "autopilot")
   
       // Add telemetry for number of corrupted messages
@@ -83,6 +76,10 @@ class FLIGHT_DATA {
       TelemetryManager->getData(&outDataBuffer,&outDataLength);
       Radio->transmitData(outDataBuffer, outDataLength); // After this line, *outDataBuffer and outDataLength go out of scope.
 
+      // Reset counters:
+      loopsSinceTelemetry = 0;
+      lastTelemetryTime = micros() / 1000.0;
+      
       return true; // Telemetry sent
     }
 
@@ -91,6 +88,10 @@ class FLIGHT_DATA {
         return false; // Failure
       }
 
+      if(inLength > 0){
+        radioPacketsSinceLastTelemetry++; // Increment the number of packets received since the previous telemetry request.
+      }
+      
       int messageLength = inLength/2; // Number of commands from ground
       
       for(int i=0;i<messageLength;i++){ // Cycles through all incoming registers
@@ -156,15 +157,19 @@ class FLIGHT_DATA {
     int getDoorPos     (){ return doorPos; }
     
     int getControlState(){ return controlState; }
-    int getLoopsPerSecond(){ return loopsSinceTelemetry / ((flightTime - lastTelemetryTime)/1000); }
+    int getAvgLoopTime(){
+      float timeSinceTelemetry = (micros()/1000.0) - lastTelemetryTime; // Milliseconds since telemetry
+      timeSinceTelemetry = timeSinceTelemetry * 10; // Centimicroseconds since telemetry
+      return (int) (timeSinceTelemetry / loopsSinceTelemetry);
+    }
     
   private:
     
     int loopsSinceTelemetry = 0;
-    unsigned long flightTime = 0; // Millis since program start
-    unsigned long lastTelemetryTime = 0; // Millis Time at which the previous telemetry packet was sent
+    float lastTelemetryTime = 0; // Millis Time at which the previous telemetry packet was sent
     
     int corruptedMessages = 0; // Number of invalid messages received since last telemetry broadcast
+    int radioPacketsSinceLastTelemetry = 0;
     int controlState = 0; // 0 = Manual, 1 = Emergency Safety (on radio loss), 2 = Waypoints??, 3 = Full Autopilot??
     
     //RPY planeAngles; // Angles of the plane  

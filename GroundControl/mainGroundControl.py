@@ -10,12 +10,12 @@ avgLoopTime = 0
 # mainLoop is called from chatConnection.py on a timer (via Tornado's event loop).
 def mainLoop():
     ''' Repeatedly runs through the code '''
-    
+
     downData = radio.readData()
-    
+
     manageData.handleDownData(downData)
-    
-    
+
+
     # Handles loop time
     global prevLoopTime
     global avgLoopTime
@@ -24,10 +24,10 @@ def mainLoop():
     avgLoopTime = (timeDif+(avgLoopTime*63))/64
     #print("Timedif")
     #print(timeDif)
-    
+
     currentTime = time.time() - startTime
     manageData.handlePiLoopData(avgLoopTime,currentTime)
-    
+
     manageData.sendData() # Sends Website Data
 
 # INITIALISES CODE
@@ -37,4 +37,5 @@ manageData = ManageData()
 startTime = time.time()
 
 if __name__ == "__main__":
+    print("Hello!")
     startChatConnection() # Does not return until chat closes!
