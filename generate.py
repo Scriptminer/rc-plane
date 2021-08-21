@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Generate CommonConstants.h and CommonConstants.py to share registers between Pi and onboard Arduino
 # Also copy the master Radio.h and TelemetryManager.h into the arduino file folders.
 
