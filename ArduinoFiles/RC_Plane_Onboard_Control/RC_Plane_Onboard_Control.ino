@@ -84,9 +84,9 @@ void loop(){
     ThisFlight.incrementCorruptedMessages();
   }
   
-  // Handles emergency mode
   ThisFlight.updateFlightData();
   
+  // Handles emergency mode
   if(ThisFlight.updateControlState( ThisFlight.Radio->getLastSignal() ) == 1){ // 1 = emergency mode
     ThisFlight.updateControls(ThisFlight.getControlState()); // Will change servo settings if necessary in emergency
     digitalWrite(controlStateLED,HIGH);
@@ -101,7 +101,7 @@ void loop(){
   door.write(ThisFlight.getDoorPos());
   motor.write(ThisFlight.getThrottlePos());
   
-  // Update sensor readings (telemetry is sent only on request)
+  // Update sensor readings
   ThisFlight.updateSensorReadings();
 
 }

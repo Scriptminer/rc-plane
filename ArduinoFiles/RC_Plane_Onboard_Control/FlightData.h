@@ -28,6 +28,7 @@ class FLIGHT_DATA {
           elevatorPos = 100; // Tilts the plane slightly up to lose speed and glide into a landing
           aileronPos = 100; // Banks slightly
           rudderPos = 90; // Stays central
+          break;
         case 2: // Autopilot ???
           break; // Maybe one day will call the autopilot class
       }
