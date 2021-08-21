@@ -192,22 +192,6 @@ $(function() {
         }
     });*/
 
-    $(".nameInputWrapper").spectrum({
-        move: function(colour){
-          $(".thisSender").css({"color":colour.toHexString()});
-          thisSender.colour = colour.toHexString();
-        },
-        change: function(colour){
-            console.log("Changed the colour");
-        },
-        hide: function(colour){
-            $(".thisSender").css({"color":thisSender.colour});
-        },
-        showInitial: true,
-        containerClassName: "namePicker",
-
-    });
-
     connect();
     updateDisplay([]);
 
@@ -240,7 +224,7 @@ function setupDisplay(){
     // Video Box
     positions[2][1] = '<div id="videoBox" class="controlBox"><span id="videoTitle" class="controlTitle">LIVE VIDEO FEED </span>'+
                       '<span id="signal" class="subnote noSig">NO SIGNAL</span></span><br>'+
-                      '<div id="video"></div>'
+                      '<div id="video"></div>'+
                       '</div>';
 
     ///// List of data for all boxes /////
@@ -248,12 +232,13 @@ function setupDisplay(){
     displayData = [{name:"dropdoors",title:"DROP DOORS",row:0,col:1,lines:[
                      {description:"Locked",id:"locked"},
                      {description:"Door Pos",id:"door"},
+                   ]},
 
                    {name:"radio",title:"RADIO LINK",row:0,col:3,lines:[
                      {description:"Onboard RSSI",id:"onboardRSSI"},
                      {description:"Packets Received",id:"radioPacketRate"},
                      {description:"Ground RSSI",id:"groundRSSI"},
-                     {description:"Serial Connection",id:"serialConnection"}
+                     {description:"Serial Connection",id:"serialConnection"},
                    ]},
 
                    {name:"livestatus",title:"STATUS",row:0,col:2,lines:[
@@ -267,36 +252,42 @@ function setupDisplay(){
                    {name:"battery",title:"BATTERY",row:1,col:2,lines:[
                      {description:"Voltage",id:"voltage"},
                      {description:"Current Draw",id:"amps"},
-                     {description:"Temperature",id:"batteryTemperature"}]},
+                     {description:"Temperature",id:"batteryTemperature"},
+                   ]},
 
                    {name:"other",title:"OTHER DATA",row:2,col:2,lines:[
                      {description:"Altitude",id:"altitude"},
                      {description:"Outside Temp",id:"outsideTemperature"},
                      {description:"Airspeed",id:"airspeed"},
-                     {description:"G-Force",id:"gforce"}]},
+                     {description:"G-Force",id:"gforce"},
+                   ]},
 
                    {name:"ailerons",title:"AILERONS",row:0,col:0,lines:[
                      {description:"Input",id:"aileronsInput"},
                      {description:"Trim Centre",id:"aileronsTrim"},
                      {description:"Control Range",id:"aileronsRange"},
-                     {description:"Roll",id:"roll"}]},
+                     {description:"Roll",id:"roll"},
+                   ]},
 
                    {name:"elevator",title:"ELEVATOR",row:1,col:0,lines:[
                      {description:"Input",id:"elevatorInput"},
                      {description:"Trim Centre",id:"elevatorTrim"},
                      {description:"Control Range",id:"elevatorRange"},
-                     {description:"Pitch",id:"pitch"}]},
+                     {description:"Pitch",id:"pitch"},
+                   ]},
 
                    {name:"rudder",title:"RUDDER",row:2,col:0,lines:[
                      {description:"Input",id:"rudderInput"},
                      {description:"Trim Centre",id:"rudderTrim"},
                      {description:"Control Range",id:"rudderRange"},
-                     {description:"Yaw",id:"yaw"}]},
+                     {description:"Yaw",id:"yaw"},
+                   ]},
 
                    {name:"throttle",title:"THROTTLE",row:3,col:0,lines:[
                      {description:"Input",id:"throttleInput"},
                      {description:"Control Range",id:"throttleRange"},
-                     {description:"Speed",id:"speed"}]},
+                     {description:"Speed",id:"speed"},
+                   ]},
                    ];
 
     for(var i=0;i<displayData.length;i++){ // Constructs all the controls

@@ -38,7 +38,7 @@ void setup() {
 
 void loop() {
   // Control surface classes, initiated with the ranges of the controls: inputMin,inputMax,servoMin,servoCentre,servoMax,maxTrimDeviation:
-  static CONTROL ailerons (potLOW,potHIGH,30,90,150,20);
+  static CONTROL ailerons (potLOW,potHIGH,30,90,150,40);
   static CONTROL elevator (potLOW,potHIGH,10,90,180,40);
   static CONTROL rudder   (potLOW,potHIGH,30,90,150,20);
   static CONTROL throttle (potLOW,potHIGH,0 ,90,180,0 );

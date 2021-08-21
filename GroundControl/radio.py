@@ -2,12 +2,29 @@ import serial
 import time
 
 class Radio:
-    def __init__(self,UNOport):
+    def __init__(self,UNOports):
 
-        print("Arduino UNO will connect on port: "+ UNOport)
+        connected = False
+        while not connected:
+            for port in UNOports:
+                try:
+                    print("Trying to connect on port {0}".format(port))
+                    connected = True # May be set to false if connection fails
+                    self.ser = self.startConnection(port)
+                except Exception as e:
+                    connected = False
+                    print("Failed to connect: {0}".format(e))
+                    time.sleep(0.5)
+                if connected:
+                    break
 
-        self.ser = serial.Serial(
-            port = UNOport,
+        print("Arduino connected.")
+
+        self.radioBuffer = [] # Buffer for data to be sent to the plane (accessed by other classes)
+
+    def startConnection(self,port):
+        serialConnection = serial.Serial(
+            port = port,
             rtscts = True,
             baudrate = 38400,
             parity = serial.PARITY_NONE,
@@ -16,8 +33,7 @@ class Radio:
             writeTimeout = 1,
             timeout = 0.01,
         )
-
-        self.radioBuffer = [] # Buffer for data to be sent to the plane (accessed by other classes)
+        return serialConnection
 
     # sendData() Not currently in use:
     #def sendData(self, dataToSend):
