@@ -31,20 +31,21 @@
 #define numButtons 13 // Number of different buttons in buttons[], inclusive of unpressed state
 #define tolerance 5 // How close reading must be to actual button value
 
-class BUTTON_HANDLER {
+class ButtonHandler {
   public:
     
     int getButtonPressed(int pinReading) {
+      // Update button press information, return the current button being held down.
       int pinMin = pinReading - tolerance;
       int pinMax = pinReading + tolerance;
       
       for(int i=0;i<numButtons;i++){
         if(pinMin < buttons[i] && pinMax > buttons[i]){ // If button i is currently held down:
-          if(buttonPosition != buttons[i]){ // Button pressed has just changed
-            lastPressTime = millis();
-            thisPressHandled = false;
+          if(buttonPosition != buttons[i]){ // The button being pressed has just changed
+            lastPressTime = millis(); // Updates timestamp, given this is a new press event.
+            thisPressHandled = false; // This is a new press event, so it has not been handled yet.
+            buttonPosition = buttons[i]; // Updates to the new button position
           }
-          buttonPosition = buttons[i];
           return buttonPosition; // Button found, no need to continue
         }
       }
@@ -53,16 +54,17 @@ class BUTTON_HANDLER {
     }
 
     unsigned long getPressedTime() {
-      // Returns how long the current button has been pressed for
+      // Returns how long the current button has been pressed for.
       return (millis() - lastPressTime);
     }
 
-    void updatePressHandled(bool isHandled) {
-      thisPressHandled = isHandled;
+    void updatePressHandled() {
+      // Internally recognises that this current button press has been handled.
+      thisPressHandled = true;
     }
 
-    bool pressHandled() {
-      // Return whether the current button press has been handled or not
+    bool isPressHandled() {
+      // Return whether the current button press has been handled or not.
       return thisPressHandled;
     }
 

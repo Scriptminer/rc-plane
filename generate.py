@@ -32,7 +32,7 @@ registers = [
     (65,"currentPitch"),
     (66,"currentYaw"),
     (67,"reportedDropDoorState"),
-    (68,"onboardLoopSpeed","Calculated centimicroseconds each loop takes on average."),
+    (68,"onboardLoopSpeed","Calculated hectomicroseconds (0.1ms units) each loop takes on average."),
     (69,"reportedControlState"),
     (70,"onboardRSSI","Received signal strength (as a positive value, not negative)"),
     (71,"currentBattVoltage","Voltage of battery (raw reading - processing to occur on PI)"),
@@ -62,23 +62,25 @@ registersPrefix = "reg_"
 
 # Ground to Air radio link:
 controlCentreFrequency = 458.4875E6 # 458.4875 MHz, IR2030 pg69 (version of April 2021)
+groundToAirTxPower = 20 # 100mW (20dBm), legal maximum for this band. (2dBm = 1.5849mW, 10dBm = 10mW, 20dBm = 100mW).
 controlChannelNumber = 23 # Can be anywhere from 1-40
 controlChannelSpacing = 25E3 # 25kHz
 groundToAirBandwidth = 125E3 # 125kHz, aka 5 channels wide. Supported values: 7.8E3, 10.4E3, 15.6E3, 20.8E3, 31.25E3, 41.7E3, 62.5E3, 125E3, 250E3, and 500E3
 groundToAirFrequency = controlCentreFrequency + (controlChannelNumber * controlChannelSpacing)
-print("groundToAirFrequency: {0}Hz, groundToAirBandwidth: {1}:Hz (channel {2})".format(groundToAirFrequency,groundToAirBandwidth,controlChannelNumber))
+print("groundToAirFrequency: {0}Hz, groundToAirBandwidth: {1}:Hz (channel {2}), groundToAirTxPower: {3}dBm".format(groundToAirFrequency,groundToAirBandwidth,controlChannelNumber,groundToAirTxPower))
 
 # Air to Ground radio link:
 telemetryCentreFrequency = 434.04E6 - 25E3 # 434.04 Mhz - 25kHz channel spacing, IR2030 pg69 (version of April 2021)
+airToGroundTxPower = 10 # 10mW (10dBm), legal maximum for this band. (2dBm = 1.5849mW, 10dBm = 10mW, 20dBm = 100mW).
 telemetryChannelNumber = 17 # Can be anywhere from 1-30
 telemetryChannelSpacing = 25E3
 airToGroundBandwidth = 125E3 # 125kHz, aka 5 channels wide. Supported values: 7.8E3, 10.4E3, 15.6E3, 20.8E3, 31.25E3, 41.7E3, 62.5E3, 125E3, 250E3, and 500E3
 airToGroundFrequency = telemetryCentreFrequency + (telemetryChannelNumber * telemetryChannelSpacing)
-print("airToGroundFrequency: {0}Hz, airToGroundBandwidth: {1}:Hz (channel {2})".format(airToGroundFrequency,airToGroundBandwidth,telemetryChannelNumber))
+print("airToGroundFrequency: {0}Hz, airToGroundBandwidth: {1}:Hz (channel {2}), airToGroundTxPower: {3}dBm".format(airToGroundFrequency,airToGroundBandwidth,telemetryChannelNumber,airToGroundTxPower))
 
 # Shared constants in the form: (constant name,constant value,[comments])
 constants = [
-    ("batteryVoltageReadingOffset",600,"Provisional number!!"),
+    ("batteryVoltageReadingOffset",550),
     ("maxRadioMessageLength",32,"Bytes"),
     ("unlockDoorSignal",100,"Signal to send from ground to unlock door."),
     ("lockDoorSignal",200,"Signal to send from ground to lock door."),
@@ -86,6 +88,8 @@ constants = [
     ("groundToAirBandwidth",groundToAirBandwidth),
     ("airToGroundFrequency",airToGroundFrequency),
     ("airToGroundBandwidth",airToGroundBandwidth),
+    ("groundToAirTxPower",groundToAirTxPower),
+    ("airToGroundTxPower",airToGroundTxPower),
     ("airTelemetryInterval",500,"Milliseconds between requests for telemetry from plane."),
     ("groundTelemetryInterval",250,"Milliseconds between sending Ground-Pi telemetry."),
     

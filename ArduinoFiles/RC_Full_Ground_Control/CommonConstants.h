@@ -11,7 +11,7 @@
 #define reg_currentPitch 65
 #define reg_currentYaw 66
 #define reg_reportedDropDoorState 67
-#define reg_onboardLoopSpeed 68 // Calculated centimicroseconds each loop takes on average.
+#define reg_onboardLoopSpeed 68 // Calculated hectomicroseconds (0.1ms units) each loop takes on average.
 #define reg_reportedControlState 69
 #define reg_onboardRSSI 70 // Received signal strength (as a positive value, not negative)
 #define reg_currentBattVoltage 71 // Voltage of battery (raw reading - processing to occur on PI)
@@ -31,7 +31,7 @@
 #define reg_testChannel4 195
 #define reg_DO_NOT_USE 255
 
-const int batteryVoltageReadingOffset = 600; // Provisional number!!
+const int batteryVoltageReadingOffset = 550;
 const int maxRadioMessageLength = 32; // Bytes
 const int unlockDoorSignal = 100; // Signal to send from ground to unlock door.
 const int lockDoorSignal = 200; // Signal to send from ground to lock door.
@@ -39,6 +39,8 @@ const long groundToAirFrequency = 459062500.0;
 const long groundToAirBandwidth = 125000.0;
 const long airToGroundFrequency = 434440000.0;
 const long airToGroundBandwidth = 125000.0;
+const int groundToAirTxPower = 20;
+const int airToGroundTxPower = 10;
 const int airTelemetryInterval = 500; // Milliseconds between requests for telemetry from plane.
 const int groundTelemetryInterval = 250; // Milliseconds between sending Ground-Pi telemetry.
 const int conflictingDropDoorMessageERR = 0; // Two messages sent to the drop door were both different

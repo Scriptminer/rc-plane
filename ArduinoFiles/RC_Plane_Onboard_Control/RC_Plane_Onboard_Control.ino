@@ -14,33 +14,7 @@
 
 //#include <AutoPID.h>
 
-#include "Radio.h"
-#include "CommonConstants.h"
-#include "Sensors.h"
-#include "DataManager.h"
-#include "FlightData.h"
 
-Servo aileron;
-Servo elevator;
-Servo rudder;
-Servo motor;
-
-Servo door;
-
-/*RADIO __tmpRadio();
-SENSOR_MANAGER __tmpSensorManager();
-DATA_MANAGER __tmpTelemetryManager(new byte[64], 64);
-*/
-
-FLIGHT_DATA ThisFlight(new RADIO(maxRadioMessageLength,groundToAirFrequency,airToGroundFrequency,groundToAirBandwidth,airToGroundBandwidth,2), // maxMessageLength, rxFrequency, txFrequency, rxBandwidth, txBandwidth, txPower in dBm (2dBm = 1.5849mW, 10dBm = 10mW, 20dBm = 100mW)
-                       new SENSOR_MANAGER(),
-                       new DATA_MANAGER(new byte[maxRadioMessageLength], maxRadioMessageLength)
-                      );
-
-#define controlStateLED 19 // Blue LED under aircraft to signal control state (as of now - nothing for manual, solid for emergency)
-#define oneWireBus 9
-
-const long flashSpeed = 500; // 0.5s
 
 ////////// SENSOR SETUP //////////
 
@@ -49,20 +23,52 @@ DallasTemperature sensors(&oneWire);*/
 
 ///////////////////// SETUP /////////////////////
 
+// Pins the signal wire bus which runs the length of the plane is attached to:
+// Violet, Grey and White wires on the bus are currently not connected to the NANO.
+#define BROWN_WIRE 3
+#define RED_WIRE 4
+#define ORANGE_WIRE 5
+#define YELLLOW_WIRE 6
+#define GREEN_WIRE 7
+#define BLUE_WIRE 8
+
+// Other NANO pins:
+#define CONTROL_STATE_LED 8
+#define ESC_WIRE 2
+
+// Define the servos:
+Servo aileron;
+Servo elevator;
+Servo rudder;
+Servo motor;
+Servo door;
+
+#include "CommonConstants.h"
+#include "Radio.h"
+#include "Sensors.h"
+#include "DataManager.h"
+#include "FlightData.h"
+
+// Initialise the Flight Manager Class:
+FlightData flightManager(new Radio(maxRadioMessageLength,groundToAirFrequency,airToGroundFrequency,groundToAirBandwidth,airToGroundBandwidth,airToGroundTxPower), // maxMessageLength, rxFrequency, txFrequency, rxBandwidth, txBandwidth, txPower in dBm 
+                         new SensorManager(),
+                         new DataManager(new byte[maxRadioMessageLength], maxRadioMessageLength)
+                      );
+
 void setup(){
   Serial.begin(38400);
-  pinMode(controlStateLED,OUTPUT); // Pin 8 - blue wire
+  pinMode(CONTROL_STATE_LED,OUTPUT);
   
   // Attach Servos
-  motor.attach(2,1000,2000); // ESC wire
-  aileron.attach(3); // Brown wire
-  door.attach(4); // Red wire
-  rudder.attach(5); // Orange wire
-  elevator.attach(6); // Red wire
+  motor.attach(ESC_WIRE,1000,2000); // ESC wire. ESC uses nonstandard servo pulse width, so needs these values set manually.
+  aileron.attach(BROWN_WIRE);
+  door.attach(RED_WIRE);
+  rudder.attach(ORANGE_WIRE);
+  elevator.attach(YELLLOW_WIRE);
   
   // LoRa Setup:
-  if(!ThisFlight.beginRadio()){
-    digitalWrite(controlStateLED,HIGH);
+  if(!flightManager.beginRadio()){
+    digitalWrite(CONTROL_STATE_LED,HIGH);
     Serial.println("LoRa setup failed.");
     while (true); // Stops the program
   }
@@ -77,31 +83,33 @@ void loop(){
   // Receive Incoming Data
   static byte inDataBuffer[maxRadioMessageLength];
   int inDataLength = 0;
-  ThisFlight.Radio->receiveData(inDataBuffer,&inDataLength);
+  flightManager.radio->receiveData(inDataBuffer,&inDataLength);
 
-  if(!ThisFlight.handleIncomingData(inDataBuffer, inDataLength)){
+  if(!flightManager.handleIncomingData(inDataBuffer, inDataLength)){
     // Error parsing data:
-    ThisFlight.incrementCorruptedMessages();
+    flightManager.incrementCorruptedMessages();
   }
   
-  ThisFlight.updateFlightData();
+  flightManager.updateFlightData();
   
   // Handles emergency mode
-  if(ThisFlight.updateControlState( ThisFlight.Radio->getLastSignal() ) == 1){ // 1 = emergency mode
-    ThisFlight.updateControls(ThisFlight.getControlState()); // Will change servo settings if necessary in emergency
-    digitalWrite(controlStateLED,HIGH);
+  flightManager.updateControlState(flightManager.radio->getLastSignal()); // Control state is currently determined only by the time since the last radio message. (less than a given threshold manual, over a given threshold emergency)
+  flightManager.updateControls(); // Modifies the control positions if the controlState is not in manual flight mode (i.e. emergency mode)
+  if( flightManager.getControlState() == 1 ){ // 1 is emergency control takeover mode
+    
+    digitalWrite(CONTROL_STATE_LED,HIGH);
   }else{
-    digitalWrite(controlStateLED,LOW);
+    digitalWrite(CONTROL_STATE_LED,LOW);
   }
 
   // Updates controls
-  aileron.write(ThisFlight.getAileronPos());
-  elevator.write(ThisFlight.getElevatorPos());
-  rudder.write(ThisFlight.getRudderPos());
-  door.write(ThisFlight.getDoorPos());
-  motor.write(ThisFlight.getThrottlePos());
+  aileron.write(flightManager.getAileronPos());
+  elevator.write(flightManager.getElevatorPos());
+  rudder.write(flightManager.getRudderPos());
+  door.write(flightManager.getDoorPos());
+  motor.write(flightManager.getThrottlePos());
   
   // Update sensor readings
-  ThisFlight.updateSensorReadings();
+  flightManager.updateSensorReadings();
 
 }

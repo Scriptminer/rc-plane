@@ -1,11 +1,11 @@
 
-class RADIO {
+class Radio {
   public:
-    RADIO (int max_radio_msg, unsigned long rx_frequency, unsigned long tx_frequency, unsigned long rx_bandwidth, unsigned long tx_bandwidth, int tx_power) : maxRadioMsg(max_radio_msg), rxFrequency(rx_frequency), txFrequency(tx_frequency), rxBandwidth(rx_bandwidth), txBandwidth(rx_bandwidth), txPower(tx_power) {
+    Radio (int max_radio_msg, unsigned long rx_frequency, unsigned long tx_frequency, unsigned long rx_bandwidth, unsigned long tx_bandwidth, int tx_power) : maxRadioMsg(max_radio_msg), rxFrequency(rx_frequency), txFrequency(tx_frequency), rxBandwidth(rx_bandwidth), txBandwidth(rx_bandwidth), txPower(tx_power) {
     }
   
     bool begin() {
-      // Begin LoRa:
+      // Begin LoRa library.
       if (!LoRa.begin(rxFrequency)) { // RX Frequency is the default.
         return false;
       }else{
@@ -19,7 +19,7 @@ class RADIO {
       // Write any incoming messages to inDataBuffer, and return the length of the message
       
       int packetSize = LoRa.parsePacket();
-      while(!packetSize && millis() < waitUntilTimestamp){
+      while(!packetSize && millis() < waitUntilTimestamp){ // Waits a given length of time for a radio packet.
         packetSize = LoRa.parsePacket();
       }
       
@@ -34,6 +34,8 @@ class RADIO {
         *inDataLength = i;
         avgRSSI = (abs(LoRa.packetRssi())+avgRSSI) / 2; // Rolling average
         return true;
+      }else{
+        // Message too long.
       }
       return false;
     }

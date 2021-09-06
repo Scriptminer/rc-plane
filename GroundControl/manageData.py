@@ -139,7 +139,14 @@ class ManageData():
                 self.dataTable["onboardRSSI"]["value"] = "-"+str(val)
 
             elif reg == registers["currentBattVoltage"]:
-                self.dataTable["voltage"]["value"] = val
+                readingMultiplier = 0.0229 # Constant taken from measurement
+                if val == 0:
+                    correctedValue = "<{0:.2f}".format( (0+commonConstants["batteryVoltageReadingOffset"])*readingMultiplier )
+                elif val == 255:
+                    correctedValue = ">{0:.2f}".format( (255+commonConstants["batteryVoltageReadingOffset"])*readingMultiplier )
+                else:
+                    correctedValue = "{0:.2f}".format( (val + commonConstants["batteryVoltageReadingOffset"])*readingMultiplier )
+                self.dataTable["voltage"]["value"] = correctedValue
 
             elif reg == registers["onboardError"]:
                 if val == 128:

@@ -14,9 +14,9 @@ struct sixDofAngles {
   int g3;
 };
 
-class SENSOR_MANAGER {
+class SensorManager {
   public:
-    SENSOR_MANAGER (){
+    SensorManager (){
     }
     
     int calculateRPY(){
@@ -25,11 +25,10 @@ class SENSOR_MANAGER {
     }
 
     void updateReadings(){
-      avgBatteryVoltageReading = ( (avgBatteryVoltageReading*(8-1)) + analogRead(A6)) / 8;
+      avgBatteryVoltageReading = ( (avgBatteryVoltageReading*(32-1)) + analogRead(A6)) / 32;
     }
     
     int getBatteryVoltage(){
-//      Serial.println(avgBatteryVoltageReading);
       return avgBatteryVoltageReading - batteryVoltageReadingOffset;
     }
     

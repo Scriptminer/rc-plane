@@ -7,10 +7,10 @@ class Radio:
         connected = False
         while not connected:
             for port in UNOports:
-                try:
-                    print("Trying to connect on port {0}".format(port))
-                    connected = True # May be set to false if connection fails
-                    self.ser = self.startConnection(port)
+                print("Trying to connect on port {0}".format(port))
+                connected = True # May be set to false if connection fails
+                try: # Try connecting
+                    self.ser = self.startConnection(port) # Throws an exception if it is unable to connect.
                 except Exception as e:
                     connected = False
                     print("Failed to connect: {0}".format(e))

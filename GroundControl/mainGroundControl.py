@@ -20,9 +20,7 @@ def mainLoop():
     global avgLoopTime
     timeDif = time.time() - prevLoopTime
     prevLoopTime = time.time()
-    avgLoopTime = (timeDif+(avgLoopTime*63))/64
-    #print("Timedif")
-    #print(timeDif)
+    avgLoopTime = (timeDif+(avgLoopTime*3))/4
 
     currentTime = time.time() - startTime
     manageData.handlePiLoopData(avgLoopTime,currentTime)

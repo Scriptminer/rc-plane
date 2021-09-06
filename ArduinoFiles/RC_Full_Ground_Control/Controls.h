@@ -1,7 +1,7 @@
 
-class CONTROL {
+class Control {
   public:
-    CONTROL (int readingMIN,int readingMAX,int servoMIN,int servoCENTRE,int servoMAX,int max_trim_deviation) : inMIN(readingMIN), inMAX(readingMAX), outMIN(servoMIN), outCENTRE(servoCENTRE), outMAX(servoMAX), maxTrimDeviation(max_trim_deviation) {
+    Control (int readingMIN,int readingMAX,int servoMIN,int servoCENTRE,int servoMAX,int max_trim_deviation) : inMIN(readingMIN), inMAX(readingMAX), outMIN(servoMIN), outCENTRE(servoCENTRE), outMAX(servoMAX), maxTrimDeviation(max_trim_deviation) {
       
       trimCENTRE = outCENTRE; // Trim centre defaults to the actual centre position.
     }
@@ -15,10 +15,12 @@ class CONTROL {
     }
 
     void adjustTrim(int d){
+      // Adjust trim position by a step of size "d" from the CURRENT position.
       trimCENTRE = constrain(trimCENTRE + d, outCENTRE-maxTrimDeviation, outCENTRE+maxTrimDeviation);
     }
 
     void resetTrim(){
+      // Resets the trim to the default/initial central position.
       trimCENTRE = outCENTRE;
     }
 
@@ -34,7 +36,7 @@ class CONTROL {
     int trimCENTRE; // The output servo value which becomes the new centrepoint (i.e. the value that is read out when the stick is in the middle)
 
     int mapControlValue(int pinReading){
-      // Map the input pinReading to an output servo value //
+      // Map the input pinReading to an output servo value.
       float fractionalPosition = ((pinReading-inMIN)*1.0) / ((inMAX-inMIN)*1.0); // Input position as a fraction between 0 and 1
       float fractionalCentrePosition = ((trimCENTRE-outMIN)*1.0) / ((outMAX-outMIN)*1.0); // Centre position as a fraction between 0 and 1
     

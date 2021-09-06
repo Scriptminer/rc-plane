@@ -1,43 +1,51 @@
 
-#define lockedPos 70;
+#define lockedPos 70; // Servo positions for the drop door
 #define unlockedPos 150;
 
-class FLIGHT_DATA {
+class FlightData {
   public:
-    RADIO* Radio; // The plane's onboard radio class
-    SENSOR_MANAGER* SensorManager; // The plane's sensor manager
-    DATA_MANAGER* TelemetryManager; // The class which manages the telemetry buffer
+    Radio* radio; // The plane's onboard radio class
+    SensorManager* sensorManager; // The plane's sensor manager
+    DataManager* telemetryManager; // The class which manages the telemetry buffer
     
-    FLIGHT_DATA (RADIO* planeRadio, SENSOR_MANAGER* planeSensors, DATA_MANAGER* planeTelemetry) : Radio(planeRadio), SensorManager(planeSensors), TelemetryManager(planeTelemetry) {
+    FlightData (Radio* planeRadio, SensorManager* planeSensors, DataManager* planeTelemetry) : radio(planeRadio), sensorManager(planeSensors), telemetryManager(planeTelemetry) {
     }
 
     bool beginRadio(){
-      return Radio->begin();
+      return radio->begin();
     }
     
     void updateFlightData(){
+      // Update any flight status information variables that needs updated every loop.
       loopsSinceTelemetry++;
     }
 
-    void updateControls(int inControlState){
-      switch(inControlState){
+    void updateControls(){
+      // Modifies the values to be written to the servos based on the current control state.
+      switch(controlState){
         case 0: // Manual flight:
-          break; // do nothing
-        case 1: // Emergency:
+          break; // No modifications needed to existing control positions
+        
+        case 1: // Emergency static controls:
+          // Sets all the controls to fixed "safe" positions. Most importantly, shutting off the motor.
           throttlePos = 0;   // Shuts off the motor
           elevatorPos = 100; // Tilts the plane slightly up to lose speed and glide into a landing
           aileronPos = 100; // Banks slightly
           rudderPos = 90; // Stays central
+          digitalWrite(CONTROL_STATE_LED,HIGH);
           break;
-        case 2: // Autopilot ???
-          break; // Maybe one day will call the autopilot class
+        case 2: // Emergency hold attitude
+          break; // In future, may call a PID loop in the Autopilot class to hold the plane's attitude level based on sensor readings.
+        default:
+          // Should not occur.
+          digitalWrite(CONTROL_STATE_LED,HIGH);
+          break;
       }
     }
 
     int updateControlState(unsigned long lastSignal){
-      // May have more complex criterea in future - just now emergency mode engages after 2 seconds of no signal
-      
-      if(millis()-lastSignal > 2000){ // If last signal was more than 2 seconds ago
+      // Determine which control state the plane should currently be operating in, based on the time since the last inbound radio packet.
+      if(millis()-lastSignal > 3000){ // If last signal was more than 3 seconds ago. 3 seconds was chosen as a compromise between control takeover being too quick and being a risking causing a crash due to interfering with a manoever, and too slow, risking the plane crashing into something with the engine likely on.
         controlState = 1; // Signal Loss: Emergency
       }else{
         controlState = 0; // Manual
@@ -46,36 +54,39 @@ class FLIGHT_DATA {
     }
 
     void updateSensorReadings(){
-      SensorManager->updateReadings();
+      // Updates the average readings of various sensors.
+      sensorManager->updateReadings();
     }
     
     bool sendTelemetry(){
+      // Transmit telemetry to ground and empty telemetry buffer.
       
       float timeSinceTelemetry = millis() - lastTelemetryTime;
       float secondsSinceTelemetry = timeSinceTelemetry / 1000.0;
       
-      TelemetryManager->addData(reg_onboardLoopSpeed,getAvgLoopTime());
+      telemetryManager->addData(reg_onboardLoopSpeed,getAvgLoopTime());
       Serial.println(getAvgLoopTime());
       
-      TelemetryManager->addData(reg_onboardRSSI, abs(Radio->getAvgRSSI())); // Received signal strength
+      telemetryManager->addData(reg_onboardRSSI, abs(radio->getAvgRSSI())); // Received signal strength
 
       float radioPacketsPerSecond = ((float) radioPacketsSinceLastTelemetry) / secondsSinceTelemetry;
-      TelemetryManager->addData(reg_onboardPacketReceiveRate, (int) radioPacketsPerSecond);
+      telemetryManager->addData(reg_onboardPacketReceiveRate, (int) radioPacketsPerSecond);
       radioPacketsSinceLastTelemetry = 0; // Reset radio packets counter.
       
-      TelemetryManager->addData(reg_reportedControlState, getControlState()); // Control Status (normal or "autopilot")
+      telemetryManager->addData(reg_reportedControlState, getControlState()); // Control Status (normal or "autopilot")
   
       // Add telemetry for number of corrupted messages
       // Sensors:
-      TelemetryManager->addData(reg_currentBattVoltage, SensorManager->getBatteryVoltage());
+      telemetryManager->addData(reg_currentBattVoltage, sensorManager->getBatteryVoltage());
       /*sensors.requestTemperatures();
       sensors.getTempCByIndex(0);*/
       
       // Send all telemetry data
       char* outDataBuffer; // Will point to the beginning of the telemetryBuffer array
       int outDataLength; // Will contain length of the data in the telemetryBuffer array
-      TelemetryManager->getData(&outDataBuffer,&outDataLength);
-      Radio->transmitData(outDataBuffer, outDataLength); // After this line, *outDataBuffer and outDataLength go out of scope.
+      telemetryManager->getData(&outDataBuffer,&outDataLength);
+      telemetryManager->resetDataBuffer(); // Resets the internal buffer pointer, ready for new data.
+      radio->transmitData(outDataBuffer, outDataLength); // After this line, *outDataBuffer and outDataLength go out of scope.
 
       // Reset counters:
       loopsSinceTelemetry = 0;
@@ -85,6 +96,7 @@ class FLIGHT_DATA {
     }
 
     bool handleIncomingData(byte inBytes[], int inLength){
+      // Reads the incoming register-value pairs and takes appropriate action for each.
       if((inLength%2)!=0){ // If array is not a multiple of 2, an error has occurred
         return false; // Failure
       }
@@ -119,11 +131,11 @@ class FLIGHT_DATA {
           case reg_setDropDoor: // Drop Door Register //
             if(inValue == unlockDoorSignal){ // Unlock door
               doorPos = unlockedPos;
-              TelemetryManager->addData(reg_reportedDropDoorState,inValue);
+              telemetryManager->addData(reg_reportedDropDoorState,inValue);
             }
             if(inValue == lockDoorSignal){ // Lock door
               doorPos = lockedPos;
-              TelemetryManager->addData(reg_reportedDropDoorState,inValue);
+              telemetryManager->addData(reg_reportedDropDoorState,inValue);
             }
             break;
 
@@ -140,7 +152,7 @@ class FLIGHT_DATA {
             /*if(prevAutoMsg == inValue){ // If this message and the last to this register are identical
               controlState = (int) (inValue >> 6); // Set controlState to first 2 bits converted to int
             }else if(prevAutoMsg != 9001){ // Two messages received, both different
-              TelemetryManager.addData(groundregCONFLICT,B01000000);
+              telemetryManager.addData(groundregCONFLICT,B01000000);
             }
             prevAutoMsg = inValue;*/
             //break; 
@@ -158,11 +170,6 @@ class FLIGHT_DATA {
     int getDoorPos     (){ return doorPos; }
     
     int getControlState(){ return controlState; }
-    int getAvgLoopTime(){
-      float timeSinceTelemetry = (micros()/1000.0) - lastTelemetryTime; // Milliseconds since telemetry
-      timeSinceTelemetry = timeSinceTelemetry * 10; // Centimicroseconds since telemetry
-      return (int) (timeSinceTelemetry / loopsSinceTelemetry);
-    }
     
   private:
     
@@ -180,5 +187,11 @@ class FLIGHT_DATA {
     int rudderPos;
     int throttlePos;
     int doorPos = lockedPos; // Door starts locked
+
+    int getAvgLoopTime(){
+      float timeSinceTelemetry = (micros()/1000.0) - lastTelemetryTime; // Milliseconds since telemetry
+      timeSinceTelemetry = timeSinceTelemetry * 10; // Hectomicroseconds (0.1ms units) since telemetry
+      return (int) (timeSinceTelemetry / loopsSinceTelemetry);
+    }
 };
 

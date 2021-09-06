@@ -1,10 +1,11 @@
 
-class DATA_MANAGER {
+class DataManager {
   public:
-    DATA_MANAGER (char *data_buffer, int data_buffer_length) : dataBuffer(data_buffer), dataBufferLength(data_buffer_length) {
+    DataManager (char *data_buffer, int data_buffer_length) : dataBuffer(data_buffer), dataBufferLength(data_buffer_length) {
     }
     
     void addData(char reg,char val){
+      // Adds a char to the data buffer.
       dataBufferPos %= dataBufferLength; // Ensures dataBufferPos is never beyond the end of the buffer
       dataBuffer[dataBufferPos] = reg;
       dataBuffer[dataBufferPos+1] = val;
@@ -12,10 +13,12 @@ class DATA_MANAGER {
     }
     
     void addData(int reg,int val){
+      // Constrains and adds an integer to the data buffer.
       addData((char) reg, (char) constrain(val,0,255));
     }
     
     void addDataArray(char data[],int dataLength){
+      // Adds an array of data to the data buffer.
       if(dataLength%2 != 0){ // Array must be even in length
         return;
       }
@@ -28,6 +31,10 @@ class DATA_MANAGER {
       // Sets dataOut to point to the beginning of the data buffer, and len to point to the end of the data contained within it
       *dataOut = dataBuffer;
       *len = dataBufferPos;
+    }
+    
+    void resetDataBuffer(){
+      // Resets the internal data buffer pointer
       dataBufferPos = 0; // Reset data buffer position
     }
   
