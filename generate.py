@@ -28,17 +28,22 @@ registers = [
     (6,"requestTelemetry"),
 
     # Plane to Ground registers:
-    (64,"currentRoll"),
-    (65,"currentPitch"),
-    (66,"currentYaw"),
-    (67,"reportedDropDoorState"),
-    (68,"onboardLoopSpeed","Calculated hectomicroseconds (0.1ms units) each loop takes on average."),
-    (69,"reportedControlState"),
-    (70,"onboardRSSI","Received signal strength (as a positive value, not negative)"),
-    (71,"currentBattVoltage","Voltage of battery (raw reading - processing to occur on PI)"),
-    (72,"onboardCorruptedMessages"),
-    (73,"onboardError",""), # See below in program for error codes
-    (74,"onboardPacketReceiveRate","Number of packets received since last request"),
+    (64,"reportedDropDoorState"),
+    (65,"onboardLoopSpeed","Calculated hectomicroseconds (0.1ms units) each loop takes on average."),
+    (66,"reportedControlState"),
+    (67,"onboardRSSI","Received signal strength (as a positive value, not negative)"),
+    (68,"currentBattVoltage","Voltage of battery (raw reading - processing to occur on PI)"),
+    (69,"onboardCorruptedMessages"),
+    (70,"onboardError",""), # See below in program for error codes
+    (71,"onboardPacketReceiveRate","Number of packets received since last request"),
+    
+    (72,"accelerometerX_HB","High byte"), (73,"accelerometerX_LB","Low byte"),
+    (74,"accelerometerY_HB"), (75,"accelerometerY_LB"),
+    (76,"accelerometerZ_HB"), (77,"accelerometerZ_LB"),
+    
+    (78,"gyroX_HB"), (79,"gyroX_LB"),
+    (80,"gyroY_HB"), (81,"gyroY_LB"),
+    (82,"gyroZ_HB"), (83,"gyroZ_LB"),
 
     # Ground Arduino to PI registers:
     (128,"groundLoopSpeed","Milliseconds each loop takes on average."),

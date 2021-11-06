@@ -1,117 +1,28 @@
+var lookupTable = [];
 
 $(function() {
     setupDisplay();
     var conn = null;
 
     function log(msg, msgClass) {
-      var control = $('#chat');
-      control.html(control.html() +'<span class="'+ msgClass +'">'+ msg + '</span><br/>');
-      control.scrollTop(control.scrollTop() + 1000);
-      console.log(msg);
+        var control = $('#chat');
+        control.html(control.html() +'<p>'+ msg + '</p><br/>');
+        control.scrollTop(control.scrollTop() + 1000);
+        console.log(msg);
     }
 
-    function connect() {
-      disconnect();
-
-      var transports = ["websocket", "xhr-streaming", "iframe-eventsource", "iframe-htmlfile", "xhr-polling", "iframe-xhr-polling", "jsonp-polling"];
-
-      conn = new SockJS('http://' + window.location.host + '/chat', transports);
-
-      log('Connecting to server...',"serverMsgYellow");
-
-      conn.onopen = function() {
-        // Called when we manage to connect to the server.
-        log('Connected to server!',"serverMsgGreen");
-        update_ui();
-      };
-
-      conn.onmessage = function(e) {
-        // Called when we receive a message from the server.
-        try {
-          o = JSON.parse(e.data);
-        } catch (exn) {
-          log('Received corrupt data packet (' + exn + '): ' + e.data, "serverMsgRed");
-          return;
-        }
-
-        if (!o.type) {
-          log('Received packet with no type: ' + e.data, "serverMsgRed");
-          return;
-        }
-
-        console.log(o);
-
-        switch(o.type){
-            case "chat":
-                addChat(o.data.msg,o.data.sender);
-                break;
-            case "serverMsg":
-                var serverMsg = o.data;
-                addChat(serverMsg,{name:"SERVER",colour:"#000"},true); // Sends the message, but as the name server
-                console.log(serverMsg);
-                break;
-            case "data":
-                updateDisplay(o.data);
-                break;
-            case "warning":
-                for(var i=0;i<o.data.length;i++){ // Goes through the array
-                    flashError(o.data[i].element,o.data[i].toggle); // Sets different elements to flash
-                }
-                break;
-        }
-      };
-
-      conn.onclose = function() {
-        // Called when we are disconnected from the server.
-        log('It appears you have been disconnected!<br>',"serverMsgRed");
-        conn = null;
-        update_ui();
-      };
-
-    }
-
-    function addChat(inMessage,sender,server){
-        var sender = JSON.parse(JSON.stringify(sender)); // Deep copies the sender details
-        if(!inMessage){
-            return;
-        }
-        if(sender.name == thisSender.name){ // If this is this device's message
-            sender.className = "thisSender";
-        }else{
-            sender.className = sender.name;
-        }
-
-        if(server){
-            var message = jQuery('<p>' + inMessage + ' </p>').html(); // Allows html tags in server messages
-            console.log("ServerMsg: ");
-            console.log(inMessage);
-        }else{
-            var message = jQuery('<p>' + inMessage + ' </p>').text(); // Converts the html to plain text
-        }
-
-        var html = "<span class='name "+ sender.className +"' style='color:"+ sender.colour +"'>"+ sender.name +": </span>"+ message; // Puts together the line of the message
+    function addLog(inMessage){
+        console.log("ServerMsg: ");
+        console.log(inMessage);
+        var html = "<b>SERVER: </b>"+ inMessage; // Puts together the line of the message
         log(html);
-    }
-
-    // Example call of addChat: addChat("Hello everyone! I'm a random bot secretly controlled by Aidan!",{colour:"#dab",name:"The Bot"})
-
-    function disconnect() {
-      // Called to request disconnection from the server.
-      if (conn != null) {
-        log('Disconnecting from the server...',"serverMsgYellow");
-
-        conn.close();
-        conn = null;
-
-        update_ui();
-      }
     }
 
     function update_ui() {
       // Updates the status and changes the button to "connect" when disconnected, and vice versa
       var msg = '';
 
-      if (conn == null || conn.readyState != SockJS.OPEN) {
+      if (false) { // PLACEHOLDER
         $('#status').text('disconnected');
         $('#connect').text('Connect');
       } else {
@@ -120,34 +31,38 @@ $(function() {
       }
     }
 
-    function sendJson(msg) {
-      // Send JSON object to server.
-      console.log("Sending: ");
-      console.log(msg);
-      sendRaw(JSON.stringify(msg));
+    function tick(){
+        fetch("api/data").then(function(response){
+            response.text().then(function(inString){
+                updateDisplay(JSON.parse(inString));
+                setTimeout(tock,150);
+            });
+        });
     }
 
-    function sendRaw(msg) {
-      // Send raw message to server.
-      conn.send(msg);
+    var allServerMessages = [];
+    var latestMessageID = 0;
+
+    function tock(){
+        fetch("api/serverMessages").then(function(response){
+            response.text().then(function(inString){
+                var inData = inString.split("\n"); // Data comes in newline separated
+                for(var i=0; i<inData.length; i++){
+                    var id = parseInt(inData[i].substring(0,4)); // First four characters
+                    var message = inData[i].substring(4); // Remaining characters
+                    if(allServerMessages[id] == undefined){ // If this message is new
+                        allServerMessages[id] = message; // Add this message to list of all received messages
+                        console.log("SERVER MESSAGE: "+message);
+                        document.getElementById("chat").innerHTML += "<b>MSG"+id+": </b>"+message+"<br>";
+                    }
+
+                }
+                setTimeout(tick,150);
+            });
+        });
     }
-
-    $('#connect').click(function() {
-      if (conn == null) { // If not connected
-        connect();
-      } else {
-        disconnect();
-      }
-
-      update_ui();
-      return false;
-    });
-
-    $('#quit').click(function() {
-      sendJson({'type': 'cmd', 'cmd': 'quit'});
-      return false;
-    });
-
+    tick();
+    //setTimeout(tick,5000); // TEMPORARY
     // Set page to fullscreen on doubleclick:
     $(document).dblclick(function(e){
         if($.fullscreen.isFullScreen()){
@@ -186,210 +101,142 @@ $(function() {
         console.log("Resizing Table");
     });
 
-    /*$(".LEDbox").click(function(e){ // When a light button is clicked
-        if(e.target.id != "lightsTitle"){
-        sendJson({type:"input",data:{input:e.target.id,permissionKey}}); // Sends the target and the key
-        }
-    });*/
-
-    connect();
     updateDisplay([]);
 
-    //addChat("Hello from another person",{name:"Fake Account",colour:"lime"}); Test chat code
 });
 
-var thisSender = {name:"noname",colour:"lime"}; // The default client
-var permissionKey = "noKey"; // The default value
-var maxCharacters = 220;
-var planeTitle = '<b><span style="color:#00d">BLUE-FIREBIRD v1</span> <span style="color:#0ad">Flight --001</span></b>';
+var planeTitle = '<b><span style="color:#00d">BLUEBIRD v1</span> <span style="color:#0ad">Flight --001</span></b>';
 
 //////////////////// DISPLAY ////////////////////
 
 function setupDisplay(){
-    var positions = [   ["","","",""], // First ROW
-                        ["","",""], // Second ROW
-                        ["","",""], // Third ROW
-                        ["",""], // Fourth ROW
-                    ];
 
-    // Flight logs box
-    positions[1][1] = '<div id="logBox" class="controlBox"><span id="logTitle" class="controlTitle">LOGS: '+
-                      '<span class="subnote"><span id="numUsers">0</span> user<span id="numUsersPlural">s</span> <span id="numUsersComment">, so sad...</span></span></span><br>'+
-                      '<div id="chat"></div>'+
-                      '</div>';
-    data["numUsers"] = 0;
-    data["numUsersComment"] = ", so sad...";
-    data["numUsersPlural"] = "s"
+    fetch("static/DataTableTemplate.json").then(function(response){
+        response.json().then(function(jsonTemplate){
+            console.log("YOYO!");
+            var tableData = jsonTemplate.table;
 
-    // Video Box
-    positions[2][1] = '<div id="videoBox" class="controlBox"><span id="videoTitle" class="controlTitle">LIVE VIDEO FEED </span>'+
-                      '<span id="signal" class="subnote noSig">NO SIGNAL</span></span><br>'+
-                      '<div id="video"></div>'+
-                      '</div>';
+            var positions = [[],[],[]];
 
-    ///// List of data for all boxes /////
+            for(var i=0;i<tableData.length;i++){ // Itterate through all sections in the display data table.
+                var dataSection = tableData[i];
+                var controlBox = document.createElement("div");
+                controlBox.id = dataSection.id;
+                controlBox.classList.add("controlBox");
 
-    displayData = [{name:"dropdoors",title:"DROP DOORS",row:0,col:1,lines:[
-                     {description:"Locked",id:"locked"},
-                     {description:"Door Pos",id:"door"},
-                   ]},
+                var heading = document.createElement("span");
+                heading.classList.add("controlTitle");
+                heading.innerHTML = dataSection.heading;
 
-                   {name:"radio",title:"RADIO LINK",row:0,col:3,lines:[
-                     {description:"Onboard RSSI",id:"onboardRSSI"},
-                     {description:"Packets Received",id:"radioPacketRate"},
-                     {description:"Ground RSSI",id:"groundRSSI"},
-                     {description:"Serial Connection",id:"serialConnection"},
-                   ]},
+                controlBox.appendChild(heading);
 
-                   {name:"livestatus",title:"STATUS",row:0,col:2,lines:[
-                     {description:"RasPi Loops",id:"piLoopSpeed"},
-                     {description:"NANO Loops",id:"nanoLoopSpeed"},
-                     {description:"UNO Loops",id:"unoLoopSpeed"},
-                     {description:"Ground Time",id:"groundTime"},
-                     {description:"Autopilot Mode",id:"autopilotMode"},
-                   ]},
+                for(var j=0;j<dataSection.elements.length;j++){
+                    var lineData = dataSection.elements[j];
+                    var line = document.createElement("span");
 
-                   {name:"battery",title:"BATTERY",row:1,col:2,lines:[
-                     {description:"Voltage",id:"voltage"},
-                     {description:"Current Draw",id:"amps"},
-                     {description:"Temperature",id:"batteryTemperature"},
-                   ]},
+                    if(lineData.linkSymbol == undefined){ // Normal line - there will only be one id tag
+                        var lineHtml = lineData.name + ": <span id='"+ lineData.id +"' class='controlData'>---</span>"+lineData.symbol;
+                        lookupTable.push(lineData.id);
+                    }else{ // Dual tag line - there are two data fields, separated by a linking symbol on the same line
+                        var lineHtml = lineData.name + ": <span id='"+ lineData.id[0] +"' class='controlData'>---</span>"+ lineData.symbol +" "+ lineData.linkSymbol +" <span id='"+ lineData.id[1] +"' class='controlData'>---</span>"+lineData.symbol;
+                        lookupTable.push(lineData.id[0]);
+                        lookupTable.push(lineData.id[1]);
+                    }
 
-                   {name:"other",title:"OTHER DATA",row:2,col:2,lines:[
-                     {description:"Altitude",id:"altitude"},
-                     {description:"Outside Temp",id:"outsideTemperature"},
-                     {description:"Airspeed",id:"airspeed"},
-                     {description:"G-Force",id:"gforce"},
-                   ]},
+                    line.innerHTML = "<br>"+lineHtml;
+                    controlBox.appendChild(line);
+                }
 
-                   {name:"ailerons",title:"AILERONS",row:0,col:0,lines:[
-                     {description:"Input",id:"aileronsInput"},
-                     {description:"Trim Centre",id:"aileronsTrim"},
-                     {description:"Control Range",id:"aileronsRange"},
-                     {description:"Roll",id:"roll"},
-                   ]},
+                var image = document.createElement("div");
+                image.id = dataSection.id+"Img";
+                image.classList.add("controlImg");
+                //image.style.backgroundImage = "url('static/controls/"+ dataSection.heading.toLowerCase() +".png')";
 
-                   {name:"elevator",title:"ELEVATOR",row:1,col:0,lines:[
-                     {description:"Input",id:"elevatorInput"},
-                     {description:"Trim Centre",id:"elevatorTrim"},
-                     {description:"Control Range",id:"elevatorRange"},
-                     {description:"Pitch",id:"pitch"},
-                   ]},
+                controlBox.appendChild(image);
 
-                   {name:"rudder",title:"RUDDER",row:2,col:0,lines:[
-                     {description:"Input",id:"rudderInput"},
-                     {description:"Trim Centre",id:"rudderTrim"},
-                     {description:"Control Range",id:"rudderRange"},
-                     {description:"Yaw",id:"yaw"},
-                   ]},
+                positions[dataSection.position.row][dataSection.position.col] = {elem:controlBox,size:dataSection.size};
+            }
 
-                   {name:"throttle",title:"THROTTLE",row:3,col:0,lines:[
-                     {description:"Input",id:"throttleInput"},
-                     {description:"Control Range",id:"throttleRange"},
-                     {description:"Speed",id:"speed"},
-                   ]},
-                   ];
+            ///// TABLE POSITION SETUP /////
+            var table = document.getElementById("displayGrid");
+            var tableBody = document.createElement("tbody");
+            table.appendChild(tableBody);
 
-    for(var i=0;i<displayData.length;i++){ // Constructs all the controls
-        var control = displayData[i];
-        var html = "<div id='"+ control.name +"Box' class='controlBox'><span class='controlTitle'>"+ control.title +"</span>";
-        for(var j=0;j<control.lines.length;j++){
-            var line = control.lines[j];
-            html += "<br>";
-            html += line.description+": <span class='controlData' id='"+ line.id +"'></span>"; // Adds in the line
+            for(var r=0;r<positions.length;r++){ // Fills in all cells
+                var row = document.createElement("tr");
+                tableBody.appendChild(row);
+                for(var c=0;c<positions[r].length;c++){
+                    if(positions[r][c]){
+                      var cell = document.createElement("td");
+                      cell.appendChild(positions[r][c].elem);
+                      cell.rowSpan = positions[r][c].size.rowspan;
+                      cell.colSpan = positions[r][c].size.colspan;
+                      console.log("Adding:");
+                      console.log(cell);
+                      row.appendChild(cell);
+                    }
+                }
+            }
 
-            data[line.id] = "--"; // Adds entry into data object
-        }
-        html += "<div id='"+ control.name +"Img' class='controlImg' style='background-image:url(&quot;static/controls/"+ control.name +".png&quot;)'></div>"; // Adds image
-        html += "</div>";
+            windowWidth = $(window).width();
+            windowHeight = $(window).height();
 
-        positions[control.row][control.col] = html;
-    }
+            $("#displayGrid").width(windowWidth*0.95);
+            $("#displayGrid").height(windowHeight*0.95);
+            $("#displayGrid").css({"font-size": 95*(1/30)+"vh"});
 
-    ///// TABLE POSITION SETUP /////
-    var table = document.getElementById("displayGrid");
-    var tableBody = document.createElement("tbody");
-    table.appendChild(tableBody);
+            ///// CHAT SETUP /////
+            var chat = document.createElement("div");
+            chat.id = "chat";
+            document.getElementById("logsBox").appendChild(chat);
+            $(chat).css({"font-size": 95*(1/50)+"vh"});
 
+            // Gives correct sizes to control images
+            var width = 30;
+            var heightMultiplier = 0.71782945736;
+            for(var i=0;i<displayData.length;i++){
+                var imgID = "#"+displayData[i].name+"Img";
+                $(imgID).css({"width":width+"%"});
+                $(imgID).css({"height":($(imgID).width()*heightMultiplier)+"px"});
+            }
 
-    for(var x=0;x<positions.length;x++){ // Fills in all cells
-        var row = document.createElement("tr");
-        tableBody.appendChild(row);
-        for(var y=0;y<positions[x].length;y++){
-            var cell = document.createElement("td");
-            row.appendChild(cell);
-            $(cell).html(positions[x][y]);
-        }
-    }
+            $("#planeTitle").html(planeTitle);
 
-    ///// ADDITIONAL STYLING /////
+            $(".nameInput").val(thisSender.name);
+            $(".nameInput").css({"color":thisSender.colour});
 
-    $("#logBox").parent().attr('colspan',2); // Makes the logBox 2 cells wide
-    $("#logBox").parent().attr('rowspan',1); // Makes the logBox 1 cell tall
-    $("#videoBox").parent().attr('colspan',2);
-    $("#videoBox").parent().attr('rowspan',2);
-
-    windowWidth = $(window).width();
-    windowHeight = $(window).height();
-
-    $("#displayGrid").width(windowWidth*0.94);
-    $("#displayGrid").height(windowHeight*0.8);
-    $("#displayGrid").offset({left:windowWidth*0.03,top:windowHeight*(1-0.8-0.03)});
-
-    // Gives correct sizes to control images
-    var width = 30;
-    var heightMultiplier = 0.71782945736;
-    for(var i=0;i<displayData.length;i++){
-        var imgID = "#"+displayData[i].name+"Img";
-        $(imgID).css({"width":width+"%"});
-        $(imgID).css({"height":($(imgID).width()*heightMultiplier)+"px"});
-    }
-
-    $("#planeTitle").html(planeTitle);
-
-    $(".nameInput").val(thisSender.name);
-    $(".nameInput").css({"color":thisSender.colour});
-
-    // Font Handling
-    var elems = [{id:"#logTitle",size:0.1},{id:"#videoTitle",size:0.1},{id:"#chatform",size:0.05},{id:"#chat",size:0.05},{className:".controlTitle",size:0.16},{className:".controlBox",size:0.14},{className:".nameInputWrapper",size:0.05}];
-    for(var i=0;i<elems.length;i++){
-        var element = elems[i];
-        if(element.id){
-            var parentHeight = $(element.id).parent().height();
-            $(element.id).css({"font-size":(parentHeight*element.size)+"px"});
-        }
-        if(element.className){
-            console.log("It's a class...");
-            var domElement = $(element.className)[0];
-            console.log(domElement);
-            var parentHeight = $(domElement).parent().height(); // Selects the first element to have this class
-            console.log("parent height is: "+ parentHeight);
-            $(element.className).css({"font-size":(parentHeight*element.size)+"px"});
-            console.log("setting font-size to "+ (parentHeight*element.size));
-        }
-    }
+            // Font Handling
+            var elems = [{id:"#logTitle",size:0.1},{id:"#videoTitle",size:0.1},{id:"#chatform",size:0.05},{id:"#chat",size:0.05},{className:".controlTitle",size:0.16},{className:".controlBox",size:0.14},{className:".nameInputWrapper",size:0.05}];
+            for(var i=0;i<elems.length;i++){
+                var element = elems[i];
+                if(element.id){
+                    var parentHeight = $(element.id).parent().height();
+                    $(element.id).css({"font-size":(parentHeight*element.size)+"px"});
+                }
+                if(element.className){
+                    console.log("It's a class...");
+                    var domElement = $(element.className)[0];
+                    console.log(domElement);
+                    var parentHeight = $(domElement).parent().height(); // Selects the first element to have this class
+                    console.log("parent height is: "+ parentHeight);
+                    $(element.className).css({"font-size":(parentHeight*element.size)+"px"});
+                    console.log("setting font-size to "+ (parentHeight*element.size));
+                }
+            }
+        });
+    }).catch(console.error);
 }
 
-var data = {};
-
 function updateDisplay(inData){
-    console.log(inData);
-    for (var k in inData) {
-        data[k] = inData[k];
-    }
-    console.log(data);
-    $.each(data, function(key, value) { // Changes the html code
-        if(value == "true"){
-            $("#"+key).removeClass("off");
-            $("#"+key).addClass("on");
-        }else if(value == "false"){
-            $("#"+key).removeClass("on");
-            $("#"+key).addClass("off");
+    for(var i=0; i<inData.length; i++){
+        var datapoint = inData[i];
+        $("#"+datapoint.id).html(datapoint.val);
+        if(datapoint.warn == "1"){
+            flashError(datapoint.id,true);
         }else{
-            $("#"+key).html(value);
-            //console.log("changing "+ key +"'s value to "+ value);
+            flashError(datapoint.id,false);
         }
-    });
+    }
 }
 
 var flashingErrors = [];
@@ -410,7 +257,6 @@ function flashError(id,toggle){
                 $("#"+id).css("color","#000");
                 },flashLength); // Resets colour after a pause
         }else{
-            console.log("There was no error-flashing loop to remove from id: "+ id);
         }
     }
 

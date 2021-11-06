@@ -1,11 +1,8 @@
 
 body {
     background-color: #ccc;
-    background: url('static/FighterBackground.png');
-    -webkit-background-size: cover;
-    -moz-background-size: cover;
-    -o-background-size: cover;
-    background-size: cover;
+    background: linear-gradient(rgb(172, 218, 242),rgb(255, 243, 197));
+    background-attachment: fixed;
 }
 
 span {
@@ -15,6 +12,7 @@ span {
 table {
     border: 0.2vw solid purple;
     border-collapse: collapse;
+    margin: auto;
 }
 
 td {
@@ -88,6 +86,9 @@ tbody {
 #chat {
     word-wrap: break-word;
     overflow-y: scroll;
+    margin: auto;
+    width: 95%;
+    height: 80%;
 }
 
 #text {
@@ -180,17 +181,6 @@ tbody {
     background-color:#444;
     background-clip:border-box;
 }
-
-/*.chatInput {
-    position:absolute;
-    width:95%;
-    height:1.2vw;
-    left:2.5%;
-    bottom:0%;
-    font-size:0.8vw;
-    border-top:0.2vw solid #777;
-    color:#999;
-}*/
 
 .serverMsg {
     font-style:italic;

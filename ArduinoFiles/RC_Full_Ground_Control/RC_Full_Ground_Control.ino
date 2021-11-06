@@ -21,7 +21,7 @@ Radio radio(maxRadioMessageLength, airToGroundFrequency, groundToAirFrequency, a
 void setup() {
   analogReference(EXTERNAL); // Connected to the 3.3V supply
   pinMode(BUTTON_PIN,INPUT_PULLUP);
-  Serial.begin(38400);
+  Serial.begin(115200,SERIAL_8E2);
   
   radioDataManager.addData(reg_setDropDoor,lockDoorSignal); // Door is put in locked position initially
   
@@ -50,7 +50,7 @@ void loop() {
   static int avgLoopTime;
   avgLoopTime = (avgLoopTime + (millis()-currentTime)) / 2; // Take rolling average of loop times
   currentTime = millis();
-
+  
   // Update the servo positions for each control surface:
   ailerons.updateServoPosition(analogRead(AILERON_PIN));
   elevator.updateServoPosition(analogRead(ELEVATOR_PIN));
@@ -135,11 +135,13 @@ void loop() {
     requestingTelemetry = true;
     radioDataManager.addData(reg_requestTelemetry, reg_requestTelemetry);
   }
-
+  
   // Transmit data to plane:
   char* outDataBuffer; // Will point to the beginning of the radio data buffer array
   int outDataLength = 0; // Will contain length of the data in the radio data buffer array
   radioDataManager.getData(&outDataBuffer,&outDataLength);
+  radioDataManager.resetDataBuffer();
+  
   radio.transmitData(outDataBuffer,outDataLength);
   if(outDataLength > 0){
     radioPacketsSentSinceLastTelemetry++;
@@ -183,11 +185,15 @@ void loop() {
     char* outDataBuffer; // Will point to the beginning of the telemetryBuffer array
     int outDataLength = 0; // Will contain length of the data in the telemetryBuffer array
     telemetryManager.getData(&outDataBuffer,&outDataLength);
+    telemetryManager.resetDataBuffer();
     
     transmitToPI(outDataBuffer,outDataLength); // After this line, *outDataBuffer and outDataLength go out of scope.
     nextGroundTelemetryTransmit = millis() + groundTelemetryInterval;
   }
 }
+
+const char EOL[] = {255,254};
+const int EOL_LEN = 2;
 
 void transmitToPI(char txdata[], int len){
   #ifdef __HUMAN_READABLE_SERIAL__
@@ -196,8 +202,15 @@ void transmitToPI(char txdata[], int len){
     }
     Serial.println();
   #else
-    Serial.write(txdata,len);
-    Serial.write(255); Serial.write(255); // EOL
+    for(int i=0; i<len; i++){
+      Serial.write(txdata[i]);
+      delayMicroseconds(500);
+    }
+    Serial.write(EOL[0]);
+    delayMicroseconds(500);
+    Serial.write(EOL[1]);
+//    Serial.write(txdata,len);
+//    Serial.write(EOL,EOL_LEN); // EOL
   #endif
 }
 

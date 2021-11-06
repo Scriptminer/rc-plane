@@ -1,68 +1,37 @@
-from chatConnection import ChatConnection
+import json
 from CommonConstants import registers, commonConstants
-from copy import deepcopy
+import gc
 
 class ManageData():
-    dataTable = {
-        "roll":{"symbol":"°","value":"---"},
-        "pitch":{"symbol":"°","value":"---"},
-        "yaw":{"symbol":"°","value":"---"},
-        "speed":{"symbol":"mph","value":"---"},
+    dataTable = {} # Generated on request - contains a series of values (+ isWarningOn byte) *only*
+    #dataLookupTable = b'' # Generated on init from file - contains a series of all datapoints in the dataTable - in the same order as the dataString
+    numStoredServerMessages = 10
+    serverMessageLength = 128 # 4 bytes integer id, 124 bytes for message
+    serverMessages = [""]*10
 
-        "locked":{"symbol":"","value":"Locked"},
-        "door":{"symbol":"","value":"Closed"},
-        "doorSafety":{"symbol":"","value":"---"},
+    msgID = 0
 
-        "onboardRSSI":{"symbol":"dBm","value":"---"},
-        "onboardPacketReceiveRate":{"symbol":"/s","value":"--"},
-        "groundPacketSendRate":{"symbol":"/s","value":"--"},
-        "radioPacketRate":{"symbol":"","value":"-- of --"}, # Will take the value of the above two concatenated
-        "groundRSSI":{"symbol":"dBm","value":"---"},
-        "serialConnection":{"symbol":"","value":"---"},
+    def __init__(self,serverMessagesFilePath):
+        self.serverMessagesFilePath = serverMessagesFilePath
 
-        "piLoopSpeed":{"symbol":"/s","value":"---"},
-        "nanoLoopSpeed":{"symbol":"/s","value":"---"},
-        "unoLoopSpeed":{"symbol":"/s","value":"---"},
-        "groundTime":{"symbol":"s","value":"---"},
-        "autopilotMode":{"symbol":"","value":"---"},
-
-        "voltage":{"symbol":"v","value":"---"},
-        "amps":{"symbol":"A","value":"---"},
-        "batteryTemperature":{"symbol":"°C","value":"---"},
-
-        "altitude":{"symbol":"m","value":"---"},
-        "outsideTemperature":{"symbol":"°C","value":"---"},
-        "airspeed":{"symbol":"mph","value":"---"},
-        "gforce":{"symbol":"Gs","value":"---"},
-
-        "frontLight":{"symbol":"","value":False},
-        "wingSolid":{"symbol":"","value":False},
-        "wingStrobe":{"symbol":"","value":False},
-        "tailStrobe":{"symbol":"","value":False},
-        "dropLight":{"symbol":"","value":False},
-        "tailNavs":{"symbol":"","value":False},
-        "bodyLights":{"symbol":"","value":False},
-                }
-
-    warningsToSend = [] # Example entry {"element":"autopilotMode","toggle":True}
-
-    def __init__(self):
-        surfaces = [["ailerons","°"],["elevator","°"],["rudder","°"],["throttle","%"]]
-        for surface in surfaces:
-            self.dataTable[surface[0]+"Input"] = {"symbol":surface[1],"value":"---"}
-            self.dataTable[surface[0]+"Trim"] = {"symbol":surface[1],"value":"---"}
-            #self.dataTable[surface[0]+"Range"] = {"symbol":surface[1],"value":"---"}
-
-    # handleUpData() not currently in use
-    """def handleUpData(self,data):
-        ''' Handle data inputed by a device '''
-        if self.dataTable[data]["type"] == "LED":
-            self.dataTable[data]["value"] = self.dataTable[data]["value"] # Inverts the value of the register
-
-        radio.radioBuffer.extend(()) # Will ultimately send data to the UNO to change LEDS onboard
-
-        return joystick.prevValues"""
-
+        with open("static/DataTableTemplate.json","r") as dataTableTemplate:
+            jsonTable = json.load(dataTableTemplate)["table"]
+            for section in jsonTable:
+                for element in section["elements"]:
+                    linkSymbol = None
+                    try:
+                        linkSymbol = element["linkSymbol"] # Link symbol is assigned a value
+                    except KeyError:
+                        pass # Link symbol remains None
+                    if linkSymbol == None: # Standard case - only one datapoint contained - there is only 1 id
+                        self.dataTable[element["id"]] = ["--",0]
+                    else: # Dual datapoint element with 2 ids on one line
+                        self.dataTable[element["id"][0]] = ["--",0]
+                        self.dataTable[element["id"][1]] = ["--",0]
+                del section
+                gc.collect()
+            del jsonTable
+        gc.collect()
 
     def handleDownData(self,data):
         ''' Handles data received from UNO '''
@@ -71,7 +40,7 @@ class ManageData():
             msg = "String of incorrect length recieved from UNO: "
             for i in range(0,len(data)):
                 msg += str(data[i])+","
-            ChatConnection.send_all_msg(msg)
+            self.addServerMessage(msg)
             print(msg)
             return
 
@@ -81,62 +50,62 @@ class ManageData():
             #print("REG IS {0}, VAL IS {1}".format(reg,val))
             # Ground to Air registers (copy of data sent to plane):
             if reg == registers["setAilerons"]:
-                self.dataTable["aileronsInput"]["value"] = val
+                self.dataTable["ailerons"][0] = val
 
             elif reg == registers["setElevator"]:
-                self.dataTable["elevatorInput"]["value"]  = val
+                self.dataTable["elevator"][0]  = val
 
             elif reg == registers["setRudder"]:
-                self.dataTable["rudderInput"]["value"]  = val
+                self.dataTable["rudder"][0]  = val
 
             elif reg == registers["setThrottle"]:
-                self.dataTable["throttleInput"]["value"]  = round(val/1.795)
+                self.dataTable["throttle"][0]  = round(val/1.795)
 
             elif reg == registers["setDropDoor"]:
                 if val == commonConstants["unlockDoorSignal"]:
-                    ChatConnection.send_all_msg("Sending unlock drop door signal.")
+                    self.addServerMessage("Sending unlock drop door signal.")
                 elif val == commonConstants["lockDoorSignal"]:
-                    ChatConnection.send_all_msg("Sending lock drop door signal.")
+                    self.addServerMessage("Sending lock drop door signal.")
 
             # Plane to ground registers:
             if reg == registers["currentRoll"]:
-                self.dataTable["roll"]["value"] = val
+                self.dataTable["roll"][0] = val
 
             elif reg == registers["currentPitch"]:
-                self.dataTable["pitch"]["value"] = val
+                self.dataTable["pitch"][0] = val
 
             elif reg == registers["currentYaw"]:
-                self.dataTable["yaw"]["value"] = val
+                self.dataTable["yaw"][0] = val
 
             elif reg == registers["reportedDropDoorState"]:
                 if val == 100:
-                    self.dataTable["locked"]["value"] = " Unlocked" # Servo position
-                    self.dataTable["door"]["value"] = " Open" # Once the door is open, it does not propperly shut
+                    self.dataTable["locked"][0] = " Unlocked" # Servo position
+                    self.dataTable["door"][0] = " Open" # Once the door is open, it does not propperly shut
                 elif val == 200:
-                    self.dataTable["locked"]["value"] = " Locked" # Servo position
+                    self.dataTable["locked"][0] = " Locked" # Servo position
 
             elif reg == registers["onboardLoopSpeed"]:
-                self.dataTable["nanoLoopSpeed"]["value"] = round(10000/val,1) # val is avg centimicroseconds (0.1ms) per loop
+                self.dataTable["nanoDutyCycle"][0] = round(10000/val,1) # val is avg centimicroseconds (0.1ms) per loop
                 if val > 200: # 20ms per loop
-                    self.warningsToSend.append({"element":"nanoLoopSpeed","toggle":True})
+                    self.toggleWarning("nanoDutyCycle",True)
                 else:
-                    self.warningsToSend.append({"element":"nanoLoopSpeed","toggle":False})
+                    self.toggleWarning("nanoDutyCycle",False)
 
             elif reg == registers["reportedControlState"]:
                 if val == 1: # Emergency mode
-                    if self.dataTable["autopilotMode"]["value"] != "NoSig": # Only sends a message if mode has changed
-                        ChatConnection.send_all_msg("EMERGENCY MODE ENGAGED!")
-                    self.dataTable["autopilotMode"]["value"] = "NoSig"
-                    self.warningsToSend.append({"element":"autopilotMode","toggle":True})
+                    if self.dataTable["autopilotMode"][0] != "NoSig": # Only sends a message if mode has changed
+                        self.addServerMessage("EMERGENCY MODE ENGAGED!")
+                    self.dataTable["autopilotMode"][0] = "NoSig"
+                    self.toggleWarning("autopilotMode",True)
 
                 elif val == 0: # Manual / Normal mode
-                    if self.dataTable["autopilotMode"]["value"] != "Manual": # Only sends a message if mode has changed
-                        ChatConnection.send_all_msg("MANUAL FLIGHT ENGAGED (breathe a sigh of relief!)")
-                    self.dataTable["autopilotMode"]["value"] = "Manual"
-                    self.warningsToSend.append({"element":"autopilotMode","toggle":False})
+                    if self.dataTable["autopilotMode"][0] != "Manual": # Only sends a message if mode has changed
+                        self.addServerMessage("MANUAL FLIGHT ENGAGED (breathe a sigh of relief!)")
+                    self.dataTable["autopilotMode"][0] = "Manual"
+                    self.toggleWarning("autopilotMode",False)
 
             elif reg == registers["onboardRSSI"]:
-                self.dataTable["onboardRSSI"]["value"] = "-"+str(val)
+                self.dataTable["onboardRSSI"][0] = "-"+str(val)
 
             elif reg == registers["currentBattVoltage"]:
                 readingMultiplier = 0.0229 # Constant taken from measurement
@@ -146,93 +115,113 @@ class ManageData():
                     correctedValue = ">{0:.2f}".format( (255+commonConstants["batteryVoltageReadingOffset"])*readingMultiplier )
                 else:
                     correctedValue = "{0:.2f}".format( (val + commonConstants["batteryVoltageReadingOffset"])*readingMultiplier )
-                self.dataTable["voltage"]["value"] = correctedValue
+                self.dataTable["batteryVoltage"][0] = correctedValue
 
             elif reg == registers["onboardError"]:
                 if val == 128:
-                    ChatConnection.send_all_msg("Inconsistant command to change drop door positions received by plane.")
+                    self.addServerMessage("Inconsistant command to change drop door positions received by plane.")
                 elif val == 64:
-                    ChatConnection.send_all_msg("Inconsistant command to control state received by plane.")
+                    self.addServerMessage("Inconsistant command to control state received by plane.")
                 elif val == 32:
-                    ChatConnection.send_all_msg("Nano loop speed too high to send.")
+                    self.addServerMessage("Nano loop speed too high to send.")
                 elif val == 16:
-                    ChatConnection.send_all_msg("Function on nano attempted to send out of range int to ground.")
+                    self.addServerMessage("Function on nano attempted to send out of range int to ground.")
                 elif val == 8:
-                    ChatConnection.send_all_msg("Nano received message of incorrect length.")
+                    self.addServerMessage("Nano received message of incorrect length.")
 
             elif reg == registers["onboardPacketReceiveRate"]:
                 if val == 255:
-                    self.dataTable["onboardPacketReceiveRate"]["value"] = "255+"
+                    self.dataTable["onboardPacketReceiveRate"][0] = "255+"
                 else:
-                    self.dataTable["onboardPacketReceiveRate"]["value"] = val
+                    self.dataTable["onboardPacketReceiveRate"][0] = val
 
                 if val < 5:
-                    self.warningsToSend.append({"element":"onboardPacketReceiveRate","toggle":True})
+                    self.toggleWarning("onboardPacketReceiveRate",True)
                 else:
-                    self.warningsToSend.append({"element":"onboardPacketReceiveRate","toggle":False})
+                    self.toggleWarning("onboardPacketReceiveRate",False)
 
             # Ground to PI Registers
             elif reg == registers["groundLoopSpeed"]:
-                self.dataTable["unoLoopSpeed"]["value"] = round(1000/val,1)
+                if val == 0:
+                    continue
+                self.dataTable["unoDutyCycle"][0] = round(1000/val,1)
                 if val > 100: # 100ms per loop
-                    self.warningsToSend.append({"element":"unoLoopSpeed","toggle":True})
+                    self.toggleWarning("unoDutyCycle",True)
                 else:
-                    self.warningsToSend.append({"element":"unoLoopSpeed","toggle":False})
+                    self.toggleWarning("unoDutyCycle",False)
 
             elif reg == registers["groundRSSI"]:
-                self.dataTable["groundRSSI"]["value"] = "-"+str(val)
+                self.dataTable["groundRSSI"][0] = "-"+str(val)
 
             elif reg == registers["groundRadioStarted"]:
-                print("HIHIHIHIHIHIHIHIHI!!!!")
                 if val == 0:
-                    ChatConnection.send_all_msg("Ground radio succesfully started!")
+                    self.addServerMessage("Ground radio succesfully started!")
                 if val == 1:
-                    ChatConnection.send_all_msg("Ground radio failed to start - reset arduino.")
+                    self.addServerMessage("Ground radio failed to start - reset arduino.")
 
             elif reg == registers["aileronTrimPos"]:
-                self.dataTable["aileronsTrim"]["value"] = val
+                self.dataTable["aileronsTrim"][0] = val
 
             elif reg == registers["elevatorTrimPos"]:
-                self.dataTable["elevatorTrim"]["value"] = val
+                self.dataTable["elevatorTrim"][0] = val
 
             elif reg == registers["rudderTrimPos"]:
-                self.dataTable["rudderTrim"]["value"] = val
+                self.dataTable["rudderTrim"][0] = val
 
             elif reg == registers["groundPacketSendRate"]:
                 if val == 255:
-                    self.dataTable["groundPacketSendRate"]["value"] = "255+"
+                    self.dataTable["groundPacketSendRate"][0] = "255+"
                 else:
-                    self.dataTable["groundPacketSendRate"]["value"] = val
+                    self.dataTable["groundPacketSendRate"][0] = val
 
                 if val < 10:
-                    self.warningsToSend.append({"element":"groundPacketSendRate","toggle":True})
+                    self.toggleWarning("groundPacketSendRate",True)
                 else:
-                    self.warningsToSend.append({"element":"groundPacketSendRate","toggle":False})
+                    self.toggleWarning("groundPacketSendRate",False)
 
             # Testing registers:
             elif reg == registers["testChannel1"]:
                 print("Test channel 1: {}".format(val))
 
-        self.dataTable["radioPacketRate"]["value"] = "{0}/s of {1}/s".format(self.dataTable["onboardPacketReceiveRate"]["value"],self.dataTable["groundPacketSendRate"]["value"])
+    def handlePiLoopData(self,avgLoopTime,currentTime,ramUsage):
+        self.dataTable["webserverDutyCycle"][0] = round(1/(avgLoopTime+0.001))
+        self.dataTable["groundTime"][0] = round(currentTime)
+        self.dataTable["webserverRAM"][0] = round(ramUsage)
 
-    def handlePiLoopData(self,avgLoopTime,currentTime):
-        self.dataTable["piLoopSpeed"]["value"] = round(1/avgLoopTime)
-        self.dataTable["groundTime"]["value"] = round(currentTime)
-
-        if self.dataTable["piLoopSpeed"]["value"] < 5:
-            self.warningsToSend.append({"element":"piLoopSpeed","toggle":True})
+        if self.dataTable["webserverDutyCycle"][0] < 5:
+            self.toggleWarning("webserverDutyCycle",True)
         else:
-            self.warningsToSend.append({"element":"piLoopSpeed","toggle":False})
+            self.toggleWarning("webserverDutyCycle",False)
 
-    def sendData(self):
+        if self.dataTable["webserverRAM"][0] > 90:
+            self.toggleWarning("webserverRAM",True)
+        else:
+            self.toggleWarning("webserverRAM",False)
+
+    def toggleWarning(self,datapoint,toggle):
+        val = 0
+        if toggle == True:
+            val = 1
+        else:
+            val = 0
+        self.dataTable[datapoint][1] = val
+
+    def addServerMessage(self,rawMsg):
+        id = str(self.msgID%10000)
+        strID = "0"*(4-len(id)) + id
+        self.serverMessages[self.msgID%self.numStoredServerMessages] = (strID+rawMsg)
+
+        self.msgID += 1
+
+    def getServerMessages(self):
+        return self.serverMessages
+
+    def getStatusDataLookupTable(self):
+        return self.lookupTable
+
+    def getStatusData(self):
         """ Sends all recorded data to ChatConnection to put on webpage """
 
-        # Sends Data
-        dataToSend = {}
-        for i in self.dataTable:
-            dataToSend[i] = str(self.dataTable[i]["value"]) + str(self.dataTable[i]["symbol"])
-
-        ChatConnection.send_all_json({"type":"warning","data":self.warningsToSend})
-        ChatConnection.send_all_json({"type":"data","data":dataToSend})
-
-        self.warningsToSend = []
+        for datapoint in self.dataTable:
+            outData = {"id":datapoint,"val":str(self.dataTable[datapoint][0]),"warn":str(self.dataTable[datapoint][1])}
+            yield json.dumps(outData)
