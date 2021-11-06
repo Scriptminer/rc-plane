@@ -1,0 +1,86 @@
+{
+  "table":[
+    {"heading":"AILERONS","id":"aileronsBox","position":{"row":0,"col":0},"size":{"colspan":1,"rowspan":1},"elements":
+      [
+        {"name":"Input",        "id":"ailerons",                   "symbol":"°"},
+        {"name":"Trim Centre",  "id":"aileronsTrim",               "symbol":"°"},
+        {"name":"Control Range","id":["aileronsMin","aileronsMax"],"symbol":"°","linkSymbol":"-"},
+        {"name":"Roll",         "id":"roll",                       "symbol":"°"}
+      ]
+    },
+
+    {"heading":"ELEVATOR","id":"elevatorBox","position":{"row":1,"col":0},"size":{"colspan":1,"rowspan":1},"elements":
+      [
+        {"name":"Input",        "id":"elevator",                   "symbol":"°"},
+        {"name":"Trim Centre",  "id":"elevatorTrim",               "symbol":"°"},
+        {"name":"Control Range","id":["elevatorMin","elevatorMax"],"symbol":"°","linkSymbol":"-"},
+        {"name":"Roll",         "id":"pitch",                      "symbol":"°"}
+      ]
+    },
+
+    {"heading":"RUDDER","id":"rudderBox","position":{"row":2,"col":0},"size":{"colspan":1,"rowspan":1},"elements":
+      [
+        {"name":"Input",        "id":"rudder",                 "symbol":"°"},
+        {"name":"Trim Centre",  "id":"rudderTrim",             "symbol":"°"},
+        {"name":"Control Range","id":["rudderMin","rudderMax"],"symbol":"°","linkSymbol":"-"},
+        {"name":"Roll",         "id":"yaw",                    "symbol":"°"}
+      ]
+    },
+
+    {"heading":"THROTTLE","id":"throttleBox","position":{"row":2,"col":1},"size":{"colspan":1,"rowspan":1},"elements":
+      [
+        {"name":"Input",        "id":"throttle",                   "symbol":"%"},
+        {"name":"Control Range","id":["throttleMin","throttleMax"],"symbol":"%","linkSymbol":"-"},
+        {"name":"Roll",         "id":"speed",                      "symbol":"m/s"}
+      ]
+    },
+
+    {"heading":"DROP DOORS","id":"dropDoorsBox","position":{"row":0,"col":1},"size":{"colspan":1,"rowspan":1},"elements":
+      [
+        {"name":"Locked",       "id":"locked",    "symbol":""},
+        {"name":"Door Pos",     "id":"door",      "symbol":""},
+        {"name":"Control Range","id":"doorSafety","symbol":""}
+      ]
+    },
+
+    {"heading":"SOFTWARE","id":"softwareBox","position":{"row":0,"col":2},"size":{"colspan":1,"rowspan":1},"elements":
+      [
+        {"name":"NANO",         "id":"nanoDutyCycle",     "symbol":"Hz"},
+        {"name":"UNO",          "id":"unoDutyCycle",      "symbol":"Hz"},
+        {"name":"WebServer",    "id":"webserverDutyCycle","symbol":"Hz"},
+        {"name":"WebServer RAM","id":"webserverRAM",      "symbol":"%"},
+        {"name":"Ground Time",  "id":"groundTime",        "symbol":"s"}
+      ]
+    },
+
+    {"heading":"RADIO LINK","id":"radioBox","position":{"row":0,"col":3},"size":{"colspan":1,"rowspan":1},"elements":
+      [
+        {"name":"Onboard RSSI",    "id":"onboardRSSI",                                      "symbol":"dBm"},
+        {"name":"Packets Received","id":["onboardPacketReceiveRate","groundPacketSendRate"],"symbol":"/s","linkSymbol":"of"},
+        {"name":"Ground RSSI",     "id":"groundRSSI",                                       "symbol":"dBm"},
+        {"name":"Serial Conn",     "id":"lastSerialPacketReceived",                         "symbol":"s ago"},
+        {"name":"Radio Conn",      "id":"lastRadioPacketReceived",                          "symbol":"s ago"}
+      ]
+    },
+
+    {"heading":"POWER","id":"powerBox","position":{"row":2,"col":3},"size":{"colspan":1,"rowspan":1},"elements":
+      [
+        {"name":"Batt Voltage","id":"batteryVoltage",    "symbol":"V"},
+        {"name":"Current Draw","id":"batteryCurrentDraw","symbol":"A"},
+        {"name":"Batt Temp",   "id":"speed",             "symbol":"°C"}
+      ]
+    },
+
+    {"heading":"OTHER DATA","id":"otherDataBox","position":{"row":1,"col":3},"size":{"colspan":1,"rowspan":1},"elements":
+      [
+        {"name":"Altitude",    "id":"altitude",          "symbol":"m"},
+        {"name":"Outside Temp","id":"outsideTemperature","symbol":"°C"},
+        {"name":"Airspeed",    "id":"airspeed",          "symbol":"m/s"},
+        {"name":"G-Force",     "id":"gforce",            "symbol":"Gs"}
+      ]
+    },
+
+    {"heading":"FLIGHT LOGS","id":"logsBox","position":{"row":1,"col":1},"size":{"colspan":2,"rowspan":1},"elements":[]
+    }
+  ]
+}
