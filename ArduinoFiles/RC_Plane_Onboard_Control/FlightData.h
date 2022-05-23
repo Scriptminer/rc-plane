@@ -65,7 +65,6 @@ class FlightData {
       float secondsSinceTelemetry = timeSinceTelemetry / 1000.0;
       
       telemetryManager->addData(reg_onboardLoopSpeed,getAvgLoopTime());
-      Serial.println(getAvgLoopTime());
       
       telemetryManager->addData(reg_onboardRSSI, abs(radio->getAvgRSSI())); // Received signal strength
 

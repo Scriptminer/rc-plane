@@ -1,5 +1,5 @@
 
-//#define __HUMAN_READABLE_SERIAL__
+#define __HUMAN_READABLE_SERIAL__
 
 #include <SPI.h>
 #include <LoRa.h>

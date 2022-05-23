@@ -150,7 +150,7 @@ function setupDisplay(){
                 var image = document.createElement("div");
                 image.id = dataSection.id+"Img";
                 image.classList.add("controlImg");
-                //image.style.backgroundImage = "url('static/controls/"+ dataSection.heading.toLowerCase() +".png')";
+                image.style.backgroundImage = "url('static/controls/"+ dataSection.heading.toLowerCase().replace(" ","") +".svg')";
 
                 controlBox.appendChild(image);
 

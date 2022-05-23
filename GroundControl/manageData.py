@@ -1,6 +1,5 @@
 import json
 from CommonConstants import registers, commonConstants
-import gc
 
 class ManageData():
     dataTable = {} # Generated on request - contains a series of values (+ isWarningOn byte) *only*
@@ -15,33 +14,29 @@ class ManageData():
         self.serverMessagesFilePath = serverMessagesFilePath
 
         with open("static/DataTableTemplate.json","r") as dataTableTemplate:
+            #print("Not yet loaded the json table", gc.mem_alloc() / (gc.mem_alloc()+gc.mem_free()) * 100)
             jsonTable = json.load(dataTableTemplate)["table"]
             for section in jsonTable:
+                #print("Loading section "+section["heading"], gc.mem_alloc() / (gc.mem_alloc()+gc.mem_free()) * 100)
                 for element in section["elements"]:
-                    linkSymbol = None
-                    try:
-                        linkSymbol = element["linkSymbol"] # Link symbol is assigned a value
-                    except KeyError:
-                        pass # Link symbol remains None
+                    linkSymbol = element.get("linkSymbol")
                     if linkSymbol == None: # Standard case - only one datapoint contained - there is only 1 id
                         self.dataTable[element["id"]] = ["--",0]
                     else: # Dual datapoint element with 2 ids on one line
                         self.dataTable[element["id"][0]] = ["--",0]
                         self.dataTable[element["id"][1]] = ["--",0]
                 del section
-                gc.collect()
+                #gc.collect()
             del jsonTable
-        gc.collect()
+        #gc.collect()
+        #print("Completed initialising ManageData", gc.mem_alloc() / (gc.mem_alloc()+gc.mem_free()) * 100)
 
     def handleDownData(self,data):
         ''' Handles data received from UNO '''
 
         if len(data) % 2 != 0:
-            msg = "String of incorrect length recieved from UNO: "
-            for i in range(0,len(data)):
-                msg += str(data[i])+","
-            self.addServerMessage(msg)
-            print(msg)
+            msg = ",".join(data)
+            self.addServerMessage("<span color='#b77'><i> String of incorrect length recieved from UNO: {data} </i></span>".format(data=msg))
             return
 
         for i in range(0,len(data),2):

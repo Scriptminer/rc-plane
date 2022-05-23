@@ -4,21 +4,29 @@ MIT license
 (C) Konstantin Belyalov 2017-2018
 """
 import gc
+print("Imported GC", gc.mem_alloc() / (gc.mem_alloc()+gc.mem_free()) * 100)
 import tinyweb
+print("Imported Tinyweb", gc.mem_alloc() / (gc.mem_alloc()+gc.mem_free()) * 100)
 import json
+print("Imported JSON", gc.mem_alloc() / (gc.mem_alloc()+gc.mem_free()) * 100)
 import time
+print("Imported Time", gc.mem_alloc() / (gc.mem_alloc()+gc.mem_free()) * 100)
 
 path = '/GroundControl'
 
 from manageData import ManageData
 manageData = ManageData(path+"/serverMessages.txt")
+gc.collect()
+print("Imported ManageData", gc.mem_alloc() / (gc.mem_alloc()+gc.mem_free()) * 100)
 from serial import Serial
 serial = Serial(64)
+print("Imported Serial", gc.mem_alloc() / (gc.mem_alloc()+gc.mem_free()) * 100)
 
 prevLoopTime = time.time()
 avgLoopTime = 1
 
 app = tinyweb.webserver() # Create web server application
+print("Created tinyweb webserver", gc.mem_alloc() / (gc.mem_alloc()+gc.mem_free()) * 100)
 
 # Index page
 @app.route('/')
@@ -32,6 +40,14 @@ async def staticFile(req, resp, fn):
     print("Serving {}".format(path+'/static/{}'.format(fn)))
     print("Mem usage: {0}%".format(round(gc.mem_alloc() / (gc.mem_alloc()+gc.mem_free()) * 100)))
     await resp.send_file(path+'/static/{}'.format(fn))
+    gc.collect()
+
+@app.route('/static/controls/<fn>')
+async def staticImgFile(req, resp, fn):
+    print("Serving {}".format(path+'/static/controls/{}'.format(fn)))
+    print("Mem usage: {0}%".format(round(gc.mem_alloc() / (gc.mem_alloc()+gc.mem_free()) * 100)))
+    resp.add_header("Content-Encoding","gzip")
+    await resp.send_file(path+'/static/controls/{}'.format(fn))
     gc.collect()
 
 @app.route('/api/data')
@@ -65,6 +81,8 @@ async def serveServerMessages(req, resp):
 
 startTime = time.time()-1 # Temporary hack to prevent time difference and thus average time reaching 0
 
+print("Defined some stuff", gc.mem_alloc() / (gc.mem_alloc()+gc.mem_free()) * 100)
+
 def mainLoop():
     # Handles loop time
     global prevLoopTime
@@ -84,6 +102,7 @@ def mainLoop():
     app.loop.create_task(mainLoop)
 
 app.loop.create_task(mainLoop)
+print("Created a task", gc.mem_alloc() / (gc.mem_alloc()+gc.mem_free()) * 100)
 try:
     print("Beginning execution...")
     app.run(host='0.0.0.0', port=80)
