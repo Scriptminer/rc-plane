@@ -1,0 +1,220 @@
+
+body {
+    background-color: #ccc;
+    background: linear-gradient(rgb(172, 218, 242),rgb(255, 243, 197));
+    background-attachment: fixed;
+}
+
+span {
+    opacity:1;
+}
+
+table {
+    border: 0.2vw solid purple;
+    border-collapse: collapse;
+    margin: auto;
+}
+
+td {
+    position: relative;
+    width: 25%;
+    height: 22%;
+    border:inherit;
+}
+
+tr {
+    height: 23%;
+    width: 100%;
+    border: 0.2vw solid purple;
+    border-collapse: collapse;
+}
+
+tbody {
+    position:relative;
+}
+
+#displayGrid {
+    position: absolute;
+    /*width: 94%;
+    height: 80%;*/
+
+    background-color: rgba(220,220,220,0.5);
+}
+
+#topHeading {
+    font-size: 130%;
+}
+
+#logTitle {
+    color: #52a;
+    /*font-size: 3.5vh; ***/
+    align: center;
+}
+
+#videoTitle {
+    color: #fff;
+    /*font-size: 3.5vh; ***/
+}
+
+#videoBox {
+    background-color: rgba(0,0,0,0);
+}
+
+#video {
+    position:absolute;
+    width:100%;
+    height:100%;
+    left:0%;
+    top:0%;
+    background: url('https://media.giphy.com/media/iF3M9gPPCdulq/giphy.gif') rgba(10,10,10,0.8);
+    opacity:0.3;
+    z-index:-1;
+}
+
+#connect {
+    background-color:#aaa;
+    border: 0.3vw solid #aaa;
+    border-radius: 0.3vw;
+}
+
+#serverData {
+    background-color:#ccc;
+    border: 0.8vw solid #ccc;
+    border-radius: 0.5vw;
+}
+
+#chat {
+    word-wrap: break-word;
+    overflow-y: scroll;
+    margin: auto;
+    width: 95%;
+    height: 80%;
+}
+
+#text {
+    position:absolute;
+    width:95%;
+    height:4%;
+    left:1%;
+    bottom:0%;
+    /*font-size:0.8vw; ***/
+    font-size:inherit;
+}
+
+.largeChat {
+    font-size: 200%; /* Larger than normal chat size */
+    color:#c3c3c3;
+    font-weight:bold;
+}
+
+.controlBox {
+    position: absolute;
+
+    width: 100%;
+    height: 100%;
+    left: 0%;
+    top: 0%;
+    padding-left:2%;
+
+}
+
+.controlTitle {
+    color: #03a;
+    /*font-size: 3vh;***/
+    font-weight:bold;
+    font-style:italic;
+}
+
+.controlImg {
+    position:absolute;
+    right: 2%;
+    top: 2%;
+    width: 97px;
+    height: 70px;
+    background-size: cover;
+}
+
+.controlData {
+    font-weight: bold;
+}
+
+.subnote {
+    color: #446;
+    font-size: 60%;
+}
+
+.noSig {
+    color:red;
+    font-weight:bold;
+}
+
+.sig {
+    color:green;
+    font-weight:bold;
+}
+
+.hidden {
+    border: none;
+    border-colapse:collapse;
+}
+
+.LEDrow {
+    height:8%;
+    border-colapse:collapse;
+    border:none;
+}
+
+.LEDbox {
+    position:absolute;
+    height:80%;
+    width:45%;
+    top:10%;
+    text-align:center;
+    border-radius:1vw;
+    font-weight:bold;
+}
+
+.on {
+    background-color:yellow;
+    background-clip:border-box;
+}
+
+.off {
+    background-color:#444;
+    background-clip:border-box;
+}
+
+.serverMsg {
+    font-style:italic;
+}
+
+.serverMsgGreen {
+    font-style:italic;
+    color:lime;
+}
+
+.serverMsgYellow {
+    font-style:italic;
+    color:#c80;
+}
+
+.serverMsgRed {
+    font-style:italic;
+    color:#f00;
+}
+
+.name {
+    font-weight:bold;
+}
+
+.nameInput {
+    position:absolute;
+    width:20%;
+    /*height:1.2vw; ***/
+    /*font-size:0.8vw;***/
+    font-size: inherit;
+    height:6%;
+
+    right:7%;
+    top:1%;
+}
