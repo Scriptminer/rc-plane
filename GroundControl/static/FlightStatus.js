@@ -194,8 +194,8 @@ function setupDisplay(){
             // Gives correct sizes to control images
             var width = 30;
             var heightMultiplier = 0.71782945736;
-            for(var i=0;i<displayData.length;i++){
-                var imgID = "#"+displayData[i].name+"Img";
+            for(var i=0;i<tableData.length;i++){
+                var imgID = "#"+tableData[i].name+"Img";
                 $(imgID).css({"width":width+"%"});
                 $(imgID).css({"height":($(imgID).width()*heightMultiplier)+"px"});
             }
@@ -228,13 +228,18 @@ function setupDisplay(){
 }
 
 function updateDisplay(inData){
+    console.log("Parsing: ");
+    console.log(inData);
     for(var i=0; i<inData.length; i++){
         var datapoint = inData[i];
-        $("#"+datapoint.id).html(datapoint.val);
-        if(datapoint.warn == "1"){
-            flashError(datapoint.id,true);
+        var id = lookupTable[i];
+        var val = inData[i][0];
+        var warn = inData[i][1];
+        $("#"+id).html(val);
+        if(warn == "1"){
+            flashError(id,true);
         }else{
-            flashError(datapoint.id,false);
+            flashError(id,false);
         }
     }
 }

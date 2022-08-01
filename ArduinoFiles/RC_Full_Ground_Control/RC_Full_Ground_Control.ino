@@ -1,5 +1,5 @@
 
-#define __HUMAN_READABLE_SERIAL__
+//#define __HUMAN_READABLE_SERIAL__
 
 #include <SPI.h>
 #include <LoRa.h>
@@ -38,7 +38,7 @@ void setup() {
 void loop() {
   // Control surface classes, initiated with the ranges of the controls: inputMin,inputMax,servoMin,servoCentre,servoMax,maxTrimDeviation:
   static Control ailerons (potLOW,potHIGH,30,90,150,40);
-  static Control elevator (potLOW,potHIGH,10,90,180,40);
+  static Control elevator (potLOW,potHIGH,35,90,180,40);
   static Control rudder   (potLOW,potHIGH,30,90,150,20);
   static Control throttle (potLOW,potHIGH,0 ,90,180,0 );
 

@@ -76,7 +76,8 @@
         {"name":"Altitude",    "id":"altitude",          "symbol":"m"},
         {"name":"Outside Temp","id":"outsideTemperature","symbol":"°C"},
         {"name":"Airspeed",    "id":"airspeed",          "symbol":"m/s"},
-        {"name":"G-Force",     "id":"gforce",            "symbol":"Gs"}
+        {"name":"G-Force",     "id":"gforce",            "symbol":"Gs"},
+        {"name":"Autopilot",   "id":"autopilotMode",     "symbol":""}
       ]
     },
 

@@ -3,6 +3,7 @@
 **/GroundControl/__pycache__
 /ArduinoFiles/RC_Plane_Onboard_Control/CommonConstants.h
 /GroundControl/CommonConstants.py
+/GroundControl/ESP8266
 /ArduinoFiles/RC_Plane_Onboard_Control/DataManager.h
 /ArduinoFiles/RC_Plane_Onboard_Control/Radio.h
 /ArduinoFiles/RC_Plane_Full_Ground_Control/DataManager.h

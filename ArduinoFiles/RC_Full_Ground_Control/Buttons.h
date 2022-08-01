@@ -17,7 +17,7 @@
 #define left_arrow 449 // Trim ailerons left
 #define right_arrow 590 // Trim ailerons right
 #define up_arrow 674 // Trim elevator up
-#define down_arrow 392 // Trime elevator down
+#define down_arrow 392 // Trim elevator down
 
 #define left_skip 79 // Trim rudder left
 #define right_skip 209 // Trim rudder right

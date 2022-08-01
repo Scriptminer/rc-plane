@@ -7,17 +7,26 @@
 #define reg_setDropDoor 4
 #define reg_setAutopilotState 5
 #define reg_requestTelemetry 6
-#define reg_currentRoll 64
-#define reg_currentPitch 65
-#define reg_currentYaw 66
-#define reg_reportedDropDoorState 67
-#define reg_onboardLoopSpeed 68 // Calculated hectomicroseconds (0.1ms units) each loop takes on average.
-#define reg_reportedControlState 69
-#define reg_onboardRSSI 70 // Received signal strength (as a positive value, not negative)
-#define reg_currentBattVoltage 71 // Voltage of battery (raw reading - processing to occur on PI)
-#define reg_onboardCorruptedMessages 72
-#define reg_onboardError 73 // 
-#define reg_onboardPacketReceiveRate 74 // Number of packets received since last request
+#define reg_reportedDropDoorState 64
+#define reg_onboardLoopSpeed 65 // Calculated hectomicroseconds (0.1ms units) each loop takes on average.
+#define reg_reportedControlState 66
+#define reg_onboardRSSI 67 // Received signal strength (as a positive value, not negative)
+#define reg_currentBattVoltage 68 // Voltage of battery (raw reading - processing to occur on PI)
+#define reg_onboardCorruptedMessages 69
+#define reg_onboardError 70 // 
+#define reg_onboardPacketReceiveRate 71 // Number of packets received since last request
+#define reg_accelerometerX_HB 72 // High byte
+#define reg_accelerometerX_LB 73 // Low byte
+#define reg_accelerometerY_HB 74
+#define reg_accelerometerY_LB 75
+#define reg_accelerometerZ_HB 76
+#define reg_accelerometerZ_LB 77
+#define reg_gyroX_HB 78
+#define reg_gyroX_LB 79
+#define reg_gyroY_HB 80
+#define reg_gyroY_LB 81
+#define reg_gyroZ_HB 82
+#define reg_gyroZ_LB 83
 #define reg_groundLoopSpeed 128 // Milliseconds each loop takes on average.
 #define reg_groundRSSI 129
 #define reg_groundRadioStarted 130 // 0 for success, 1 for failure

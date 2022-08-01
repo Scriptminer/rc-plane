@@ -18,18 +18,12 @@ class Serial:
         if inData == None or len(inData) > self.maxMessageLength:
             return b''
 
-        print("\nReceived serial packet: ",end="")
-        for b in inData:
-            print(b,end=", ")
-        print()
-
         for inByte in inData:
             self.inMessage += bytes([inByte])
             if len(self.inMessage) > 1:
                 if self.inMessage[-2] == 255 and self.inMessage[-1] == 254: # If last two characters are 255,254
                     out = self.inMessage[:-2] # Return the whole message, except the last 2 characters
                     self.inMessage = b''
-                    print("Returning above data.")
                     return out # Ignore any subsequent characters
 
                 if len(self.inMessage) > self.maxMessageLength: # TEMPORARILY STILL HERE
