@@ -1,21 +1,22 @@
 # RC Plane Control System
-A radio control system for a remote control model plane using Arduino.
+A radio control system for a remote control model plane using Arduino, and the ESP8266 for telemetry.
 
 ## Overview
 There are two core components, the Arduino UNO (UNO) to transmit control signals to the plane via LoRa radio, and the Arduino NANO (NANO) which reads the control signals and writes these values to the onboard servos / controls.
-Optionally, an ESP8266 can be connected via USB serial to the UNO to run a python script which interprets and presents the inbound telemetry on a webpage it locally hosts using tornado.
+Optionally, an ESP8266 can be connected via USB serial to the UNO to interpret and display the inbound telemetry on a webpage it locally hosts using TinyWeb.
 
 ## Arduino UNO
-Runs RC_Full_Ground_Control.ino, which reads raw joystick and button inputs and converts to register-value pairs, which are sent over a LoRa radio link to the NANO.
+Runs `RC_Full_Ground_Control.ino`, which reads raw joystick and button inputs and converts to register-value pairs, which are sent over a LoRa radio link to the NANO.
 The UNO periodically appends to these packets sent to the NANO a request for telemetry and listens for a response packet.
-The UNO also periodically sends any inbound radio packets from the NANO, along with the positions and trim of the joysticks and it's own telemetry over serial, to be received by the Pi.
+The UNO also periodically sends any inbound radio packets from the NANO, along with the positions and trim of the joysticks and it's own telemetry over serial, to be received by the ESP8266.
 
 ## NANO
-Runs RC_Plane_Onboard_Control.ino, which continually checks for incoming LoRa radio packets, interprets them, and adjust servos and controls accordingly.
+Runs `RC_Plane_Onboard_Control.ino`, which continually checks for incoming LoRa radio packets, interprets them, and adjust servos and controls accordingly.
 Also responds to requests for telemetry (i.e. onboard sensors, loop speed, packets received, number of corrupted packets, received signal strength etc.).
 Also has an emergency cutoff mode, where if no signal has been received for a given period, it turns the throttle to 0% and returns the servos to their central positions.
 
 ## ESP8266
+Runs [MicroPython](https://docs.micropython.org/en/latest/esp8266/tutorial/intro.html), with the contents of `/GroundControl/` copied onto its filesystem. This receives telemetry data from the UNO over USB, and runs a [TinyWeb](https://github.com/belyalov/tinyweb) webserver which hosts this.
 
 ## Radio Protocol
 Radio packets between the NANO and the UNO consist of a series of bytes in the pattern: register byte, value byte, register byte, value byte etc...
